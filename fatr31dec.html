@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/></head>
+<style> textarea { font-family:'Courier New' }
+
+</style>
+
+<body style="background-color:lightblue; font-family:'Courier New'">
+
+<div style="text-align:center;background-color:lightblue">
+<br>
+<br><br><br>
+
+<textarea id="output" style="width:420px;height:320px; font-size:12px" > &#10; -*-*-*- Welcome to Minimal FatR 2019 v0.1 -*-*-*- 
+</textarea> <textarea id="file" style="width:420px;height:320px; font-size:12px" >
+Bool = (forall X (X -> (X -> X)));
+x:X; y: X;
+true = (Lambda X (lambda x ( lambda y x) ));
+false = (Lambda X (lambda x ( lambda y y) ));
+t :Bool ; u : U; w :U;
+ifuwt = (((t U) u) w);
+UxV = (forall X ( (U -> (V -> X))  -> X ));
+z: (U -> (V -> X)); v: V;
+uXv = (Lambda X ( lambda z ( (z u) v ) ));
+p: ( forall X ( (U -> (V -> X))  -> X ) ) ;
+u':U; v' :V;
+proj1 = ((p U)(lambda u' (lambda v' u')) );
+proj2 = ((p V)(lambda u' (lambda v' v')) );
+
+a:N; b:N; c :N ; d : N; s: (N -> N); 0: N;
+rec: ( N -> ( ( N ->(N -> N) ) -> (N -> N) ) );
+sum =  (lambda b (lambda a (((rec a ) suc) b)));
+suc = (lambda c (lambda d (s c)));
+zero = 0; one = (s 0); two = (s one); three = (s two);
+
+</textarea> 
+<br>
+<br>
+<textarea id="comm" style="width:850px;height:40px" >((lambda p proj1) uXv)</textarea><br>
+
+<input type ="button"  id="enter" value="  Evaluate  " onclick="comm()" /> <input type ="button" id="load" value="  Load Program  " onclick="load()" /> 
+<input type ="button" id="mult" value="  Initial Multisystem  " onclick="mul()" /> <input type ="button" id="ran" value="  Random Term  " onclick="rand()" /> 
+<input type ="button" id="clearer" value="  Reset  " onclick="clearprog()" /> <input type ="button" id="reset" value=" Clear "
+ onclick="clr()"  />
+ <input type ="button" id="subs" value="  Show Substitutions  " onclick="showtyp()" />
+<input type ="button" id="graph" value="  Typability  " onclick="typgraph()" />
+
+<br><br><br><br><br><br><br><br><br>
+</div>
+
+<script>
+//globals
+
+var Symbols = {}
+var Envi = {}
+var Types = {}
+//  *** Interface Functions ***
+var out=document.getElementById("output").value;
+var clearprog = () => {Symbols = {}; Envi = {}; Types = {}
+out =""; document.getElementById("output").value ="\n -*-*-*- Welcome to Minimal FatR 2019 v0.1 -*-*-*-     \n"
+}
+
+function clr(){ out =""; document.getElementById("output").value =out;
+document.getElementById("file").value =""
+}
+function load(){
+ var output = document.getElementById("file").value;
+ 
+ var data = LoadFile(output)
+ Symbols = Resolve(data[0])
+ Types = Resolve(data[1])
+ var tv = Object.keys(data[2])
+ for(var i = 0; i < tv.length; i++ ){
+  Envi[tv[i]] = Resolve2( data[2][tv[i]] , Types)
+ }
+ for(var i = 0; i < tv.length; i++ ){
+  Envi[tv[i]] = TypeParse(Envi[tv[i]].join(" "))}
+  
+ 
+ // Resolve2 each declaration with Types 
+ out = out + "\n\n<-- Loading Program and Resolving Symbols -->\n"+ DispEq(Symbols)
+ document.getElementById("output").value = out
+}
+
+function comm(){
+var com = document.getElementById("comm").value; 
+com = com.replace(/(\r\n|\n|\r)/gm, "");
+var aux = (Fix(com)).split(" ")
+var aux2 = Resolve2(aux, Symbols)
+var result = Redexes( TermParse(aux2.join(" ")) ) 
+while(ArrayEq(result, Redexes(result))==false){var result = Redexes(result); }
+var aux3 = PrintExp(result);
+out = out + "\n\n|- " + com + " = " + aux3 + " : " + PrintExp(Typing(TermParse(aux2.join(" ")) , Envi));
+document.getElementById("output").value = out;
+     }
+  
+     function rand(){
+      document.getElementById("comm").value =PrintExp(RandomTerm(4,4) );  
+      
+      
+     } 
+  
+     function mul(){
+     var com = document.getElementById("comm").value; 
+     com = com.replace(/(\r\n|\n|\r)/gm, "");
+     var aux = (Fix(com)).split(" ")
+     var aux2 = Resolve2(aux, Symbols)
+     var result = Multisystem(aux2.join(" ")) 
+     out = out + "\n\n" + result;
+     document.getElementById("output").value = out;
+          }
+          
+          
+  function typgraph(){
+   var com = document.getElementById("comm").value; 
+   com = com.replace(/(\r\n|\n|\r)/gm, "");
+   var aux = (Fix(com)).split(" ")
+   var aux2 = Resolve2(aux, Symbols)
+   var result = GetBMultisystem(aux2.join(" ")) 
+   out = out + "\n\n   <------  *  ------>\n\n" + BMultisystem(aux2.join(" "))
+   out = out + "\n\n" + PrintMult(EResolve(result))
+   out = out + "\n\n Term is Typable if there are no Clashes above and no Cycles in the Graph below."
+   out = out + "\n\n" + PrintGraph(GenerateGraph(Graph(EResolve(result))))
+   document.getElementById("output").value = out;
+           
+           
+          }
+  
+  
+  function showtyp(){
+   
+   var com = document.getElementById("comm").value; 
+   com = com.replace(/(\r\n|\n|\r)/gm, "");
+   var aux = (Fix(com)).split(" ")
+   var aux2 = Resolve2(aux, Symbols)
+   var result = Redexes( TermParse(aux2.join(" ")) ) 
+   while(ArrayEq(result, Redexes(result))==false){var result = Redexes(result); }
+   var aux3 = PrintSub(result);
+   out = out + "\n\n"+aux3;
+   document.getElementById("output").value = out;
+  
+  
+  
+  }  
+  
+  function read1(evt) {
+  console.log("called") 
+  var f = evt.target.files[0]; 
+  if(f){
+        var r = new FileReader()
+        r.onload = function(e){var contents = e.target.result
+  out = ""
+         
+         document.getElementById("output").innerHTML = contents;
+        
+
+  }
+        r.readAsText(f)}
+  else {console.log("failed to upload") }}
+
+  
+//document.getElementById("foo").addEventListener("change", read1, false);
+// *** PARSER ***
+//(((rec M) N ) (S N)) all parenthesis must be correct (Lisp-like), reduce to one space (space-out parentheses too), split
+// (Lambda X M) (lambda x M) (M N)  ( M , N ) |  (M . 1)   (forall X (X -> Y)) (X * Y)
+// display AST
+
+var SpaceParenthesis = function spaceparenthesis(form){
+ if(form == undefined || form ==""){return ""}
+  if(["(",")",",","*",".",";","=",":"].includes(form[0])){
+ return " "+form[0]+" "+ spaceparenthesis(form.slice(1,))
+ }else{return form[0]+spaceparenthesis(form.slice(1,)) } }
+
+var Clean = function clean(form){
+var aux = function(form){
+ if(form[0]==" "){return form.slice(1,)}
+ if(form[form.length -1]==" "){return form.slice(0,length-1) }
+ for( var i = 0; i < form.length-1; i++){
+ if(form.slice(i,i+2) == "  "){return form.slice(0,i) + form.slice(i+1,) }
+ } return form}
+ while(aux(form)!= form) {form = aux(form)}return form}
+
+var Fix = function(form){return Clean(SpaceParenthesis(form)) }
+
+var Splitter = function(parser, expr){
+ for(var i = 1; i < expr.length ; i++){
+ if(ArrayEq(parser(expr.slice(0,i)),[])==false && ArrayEq(parser(expr.slice(i,)),[]) == false ){return i}}
+ return 0;}
+
+var SplitterSep = function(parser, sep, expr){
+ for(var i = 1; i < expr.length ; i++){
+ if(ArrayEq(parser(expr.slice(0,i)),[])==false &&
+ ArrayEq(parser(expr.slice(i+1,)),[]) == false && expr[i]==sep ){return i}}
+ return 0;}
+
+var TermParse = function(form) {
+var Aux = function termparse(expr)
+{ if(expr.length ==0){return []}
+  if(expr.length ==1 && expr[0][0].toLowerCase() == expr[0][0] ){return ["atom", expr]}
+if(expr[0]=="(" && expr[expr.length-1]==")")
+{ if( ArrayEq( TypeParse(expr[expr.length-2]), [] )==false
+  &&  ArrayEq(termparse(expr.slice(1,expr.length -2)),[])==false)
+ {return ["instantiation", termparse(expr.slice(1, expr.length -2)), ["typeatom", [expr[expr.length -2]  ]  ]   ]}
+  if( (expr[1] =="lambda" && expr[2][0].toLowerCase()== expr[2][0]   )&& ArrayEq( termparse(expr.slice(3,length -1)) ,[])==false)
+{return [expr[1], ["atom", [expr[2]] ], termparse(expr.slice(3,length -1))]}
+  if( (expr[1] =="Lambda" && expr[2][0].toUpperCase()== expr[2][0]   )&& ArrayEq( termparse(expr.slice(3,length -1)) ,[])==false)
+  { return [expr[1], ["typeatom", [expr[2]]], termparse(expr.slice(3,length -1))]}
+  if( ["1","2"].includes(expr[expr.length-2]) &&  ArrayEq(termparse(expr.slice(1,expr.length -3)),[])==false
+&& expr[expr.length -3]=="."){
+    return ["projection", termparse(expr.slice(1, expr.length -3)), ["proj", [expr[expr.length -2]  ]  ]   ]}
+  var k = Splitter(termparse, expr.slice(1,length - 1) );
+ if(k!=0){ return ["application", termparse(expr.slice(1,k+1)), termparse(expr.slice(k+1,expr.length -1))]}
+ var k = SplitterSep(termparse, ",", expr.slice(1,length - 1) );
+  if(k!=0){ return ["pair", termparse(expr.slice(1,k+1)), termparse(expr.slice(k+2,expr.length -1))]}}
+  return [] }
+  return Aux(Fix(form).split(" ")); }
+
+var TypeParse = function typeparse(expr){
+var Aux = function typeparse(expr){
+if(expr.length ==0){return []}
+if(expr.length ==1 && expr[0][0].toUpperCase()== expr[0][0] && expr[0]!="0"){return ["typeatom",expr ]}
+if(expr[0]=="(" && expr[expr.length -1]==")") {
+ if(expr[1]=="forall") {
+ if(ArrayEq( typeparse(expr.slice(3,expr.length-1)) , [] ) ==false)
+{return ["forall", ["typeatom", [expr[2]]], typeparse(expr.slice(3,expr.length-1))]}}
+var k = SplitterSep(typeparse, "->", expr.slice(1,length - 1));
+if(k!=0){return ["arrow", typeparse(expr.slice(1,k+1)),
+ typeparse(expr.slice(k+2,expr.length -1))]}
+var k = SplitterSep(typeparse, "*", expr.slice(1,length - 1) );
+if(k!=0){return ["conjunction",typeparse(expr.slice(1,k+1)),
+typeparse(expr.slice(k+2,expr.length -1))]}}return [] }
+return Aux(Fix(expr).split(" ")); }
+
+// *** AST PROCESSING ***
+var Atoms = ["atom","typeatom","proj"];
+var Binders = ["lambda","Lambda", "forall"];
+var Binaries = ["arrow", "application", "instantiation", "conjunction", "pair", "projection"];
+// atom  ["atom", ["x", "x_3", "[M / X]", "z", "[N / Y]", "r"] ]
+//substitution gets a new variable too automatically then we see r as x[M /X][N /Y] Write print function
+
+var GetVar = function getvar(atom){
+ if(atom[0]=="atom" || atom[0]=="typeatom" || atom[0]=="proj"){return atom[1][atom[1].length -1]}
+    else {return "";}}
+ 
+ 
+ var GetSubVar = function getsubvar(atom){
+  var aux = ""
+  if(atom[0]=="atom" || atom[0]=="typeatom" || atom[0]=="proj"){
+   aux = atom[1][0]
+   for(var i = 0; i < atom[1].length ; i++){
+    if(atom[1][i][0]== '['){aux = aux + atom[1][i]}} }
+   
+    if(atom[1].length > 1){return atom[1][atom[1].length -1]+ " = " + aux+"\n"}
+    if(atom[1].length > 1){return aux}else{return ""}
+   }
+   
+
+   var PrintSub = function printsub(ast){
+       if(ast[0]=="typeatom" || ast[0]=="atom" || ast[0]=="proj" ){return GetSubVar(ast);}
+   if( ["forall","lambda","Lambda"].includes(ast[0]))
+    {return  GetSubVar(ast[1]) + printsub(ast[2]) }
+   if(ast[0]=="arrow"){ return printsub(ast[1])+ printsub(ast[2])}
+   if(ast[0]=="conjunction"){return printsub(ast[1])+printsub(ast[2])}
+   if(ast[0]=="application"){return printsub(ast[1])+printsub(ast[2])}
+   if(ast[0]=="instantiation"){return printsub(ast[1])}
+   if(ast[0]=="pair"){return  printsub(ast[1])+ printsub(ast[2])}
+   if(ast[0]=="projection"){return printsub(ast[1])}
+   return "Error"}   
+    
+var PrintExp = function printexp(ast){
+    if(ast[0]=="typeatom" || ast[0]=="atom" || ast[0]=="proj" ){return GetVar(ast);}
+if( ["forall","lambda","Lambda"].includes(ast[0]))
+{return "(" + ast[0] + " " + GetVar(ast[1])+" "+printexp(ast[2])+")"}
+if(ast[0]=="arrow"){return "(" + printexp(ast[1])+" -> "+printexp(ast[2])+")"}
+if(ast[0]=="conjunction"){return "(" + printexp(ast[1])+" * "+printexp(ast[2])+")"}
+if(ast[0]=="application"){return "(" + printexp(ast[1])+" " +printexp(ast[2])+")"}
+if(ast[0]=="instantiation"){return "(" + printexp(ast[1])+" "+printexp(ast[2])+")"}
+if(ast[0]=="pair"){return "(" + printexp(ast[1])+" , "+printexp(ast[2])+")"}
+if(ast[0]=="projection"){return "(" + printexp(ast[1])+"."+printexp(ast[2])+")"}
+if(ast[0]=="invsub"){return "(" + printexp(ast[1])+"{"+printexp(ast[2][0])+"/" + printexp(ast[2][1]) +"}" +")"}
+
+return "Error"}
+
+var Substitution = function substitution(fresh, old, ast){
+ if (Atoms.includes(ast[0]) && GetVar(ast) == GetVar(old)){return fresh;} 
+ if(Binders.includes(ast[0])){
+  if(GetVar(ast[1]) == GetVar(old)){return ast}else
+  {return [ast[0],ast[1], substitution(fresh, old, ast[2])];}} 
+ if(Binaries.includes(ast[0])){return [ast[0], substitution(fresh,old, ast[1]), substitution(fresh,old,ast[2])];}
+         return ast;}
+
+var ArrayEq = function arrayeq(array1, array2){
+if(array1.length==0){return array2.length==0}
+if(array2.length==0){return array1.length==0}
+if(typeof(array1)=="string" || typeof(array1)=="number"){return array1==array2}
+if(array1.length!=array2.length){return false}
+for(i = 0; i < array1.length; i++){
+if(arrayeq(array1[i], array2[i]) == false){return false}}return true;}
+
+var JoinVar = function joinvar(fresh, old){
+ return [fresh[0], old[1].concat(fresh[1])]}
+
+var VarEq = function vareq(atom1,atom2){
+ return GetVar(atom1)==GetVar(atom2)}
+
+var AllVar = function allvar(ast){
+ if (ast[0]=="atom" || ast[0]=="typeatom"){return [GetVar(ast)];} 
+ if(Binders.includes(ast[0])){return [GetVar(ast[1])].concat(allvar(ast[2]));} 
+ if(Binaries.includes(ast[0])){return allvar(ast[1]).concat(allvar(ast[2]));}
+  return [];}
+
+var AlphaEquivalence = function alphaequivalence(fresh, exclude, ast){
+if (Atoms.includes(ast[0])){return ast;}
+if(Binders.includes(ast[0])){
+ 
+if(exclude.includes(GetVar(ast[1]))){
+return [ast[0], JoinVar(fresh, ast[1]) , Substitution(fresh, ast[1], alphaequivalence(fresh,exclude, ast[2]))];}else
+{return [ast[0], ast[1],  alphaequivalence(fresh,exclude, ast[2])];   }}
+if(Binaries.includes(ast[0])){return [ast[0], alphaequivalence(fresh,exclude, ast[1]),
+alphaequivalence(fresh,exclude,ast[2])];}
+return ast; }
+  
+var AlphaSubstitution = function alphasubstitution(fresh, old, ast){
+ return Substitution(fresh, old, AlphaEquivalence( FreshVar("x", AllVar(ast).concat(AllVar(fresh)  )) , AllVar(fresh),ast)   );}  
+// change x for types  
+var ArrayRemove = function arrayremove(elem, arr){
+ if (arr.length ==0){return arr;}
+ if (arr.length==1){if(VarEq(arr[0],elem)==true ){return [] }else{return arr}  }
+ if(VarEq(arr[0], elem)==true){return arrayremove(elem,arr.slice(1,));}
+ else{return [arr[0]].concat(arrayremove(elem,arr.slice(1,)));}} 
+                 
+var FreeVar = function freevar(ast){
+ if (Atoms.includes(ast[0])){return [ast];} 
+ if(Binders.includes(ast[0])){return ArrayRemove(ast[1], freevar(ast[2]));} 
+ if(Binaries.includes(ast[0])){return freevar(ast[1]).concat(freevar(ast[2]));}
+  return [];}  
+     
+var FreshVar = function freshvar(syst, old){
+ for(i=0; i< 100; i++){
+  if(old.includes(syst+"_"+i)==false){return ["typeatom", [syst+"_"+i]] }} }
+  
+var TypeSubstitution = function  typesubstitution(c,x,ast){
+ 
+if(Atoms.includes(ast[0])){
+return [ast[0], (ast[1].concat(["[" + GetVar(c) + " / "+ GetVar(x)+ "]"] )).concat([GetVar(ast) + "'"]  )]}
+if(Binders.includes(ast[0])){if( ast[0]=="Lambda" && VarEq(ast[1],x)){return ast;}
+if(ast[0]=="Lambda" && VarEq(ast[1],x)==false ){return [ast[0], ast[1], typesubstitution(c,x, ast[2]) ]; }
+return  [ast[0], typesubstitution(c, x, ast[1] ) , typesubstitution(c,x,ast[2]) ]}
+if(Binaries.includes(ast[0])){
+if(ast[0]=="instantiation"){return [ast[0], typesubstitution(c,x,ast[1]), Substitution(c,x,ast[2]) ]} 
+if(ast[0]=="projection"){return [ast[0], typesubstitution(c,x,ast[1]), ast[2] ]} 
+return [ast[0], typesubstitution(c,x,ast[1]), typesubstitution(c,x,ast[2]) ]} }
+    
+var Redexes = function redexes(ast){
+if(Atoms.includes(ast[0])){return ast ;}
+if(ast[0]=="application" && ast[1][0]=="lambda" ){
+  return redexes(AlphaSubstitution(ast[2],ast[1][1], ast[1][2]));}
+if(ast[0]=="instantiation" && ast[1][0]=="Lambda" ){
+    return redexes(TypeSubstitution(ast[2],ast[1][1], ast[1][2]));}
+if (ast[0]=="application" && PrintExp(ast[2])=="0" && ast[1][0]=="application" && ast[1][1][0]=="application" && PrintExp(ast[1][1][1])=="rec")
+ {return redexes(ast[1][1][2]) }
+//if(ast[0]=="application" && PrintExp(ast[2][1]) =="s" && ast[1][0]=="application" && ast[1][1][0]=="application" && PrintExp(ast[1][1][1])=="rec")
+ //{return [ "application", ["application", redexes(ast[1][2]), redexes(["application", redexes(ast[1]), ast[2][2]   ]) ] , redexes(ast[2][2]) ] } 
+  
+ if(ast[0]=="application" && PrintExp(ast[2][1]) =="s" && ast[1][0]=="application" && ast[1][1][0]=="application" && PrintExp(ast[1][1][1])=="rec")
+  {return [ "application", ["application", ast[1][2], redexes(["application", ast[1], ast[2][2]   ]) ] , ast[2][2] ] } 
+     
+   
+if(ast[0]=="projection" && ast[1][0]=="pair" && ast[2][1][0]=="1"){return redexes(ast[1][1])}    
+if(ast[0]=="projection" && ast[1][0]=="pair" && ast[2][1][0]=="2"){return redexes(ast[1][2])}      
+if(Binaries.includes(ast[0])){
+   return [ast[0],redexes(ast[1]),redexes(ast[2])];}
+if(Binders.includes(ast[0])){
+  return [ast[0], ast[1], redexes(ast[2])];}}
+// REPL
+// Program files definitions separated by ; of the form Symbol = Definition (which may involve other symbols)
+// Everything must be resolved, no cycles.  
+//Only for terms for now  
+var LoadFile = function loadfile(text){
+ var Sym = {}; var SymTyp = {}; var Env = {};
+
+text = text.replace(/(\r\n|\n|\r)/gm, "");
+text = text.substring(0,text.length-1)    
+var equations = Fix(text).split(";");
+
+for(var i = 0; i < equations.length; i++){
+ if(equations[i].includes("=")){
+  var aux = equations[i].split("=")
+ 
+ if(Fix(aux[0])[0].toLowerCase()== Fix(aux[0])[0]){
+Sym[Fix(aux[0])]= Fix(aux[1]).split(" ")}
+  var aux = equations[i].split("=")
+   if(Fix(aux[0])[0].toUpperCase()== Fix(aux[0])[0]){
+    
+SymTyp[Fix(aux[0])]= Fix(aux[1]).split(" ")} 
+}}
+
+for(var i = 0; i < equations.length; i++){
+  if(equations[i].includes(":"))
+  
+{
+ var aux = equations[i].split(":")
+  
+ if(Fix(aux[0])[0].toLowerCase()== Fix(aux[0])[0]){ 
+Env[Fix(aux[0])]= Fix(aux[1]).split(" ")} 
+}}
+
+return [Sym, SymTyp, Env] }
+
+var StringSub = function stringsub(fresh,old, ls){
+var StringSub1 = function stringsub1(fresh, old, ls){
+for(var i = 0; i < ls.length; i++){
+if(ls[i]==old){return ls.slice(0,i).concat(fresh.concat(ls.slice(i + 1 ,))) }} 
+return ls} 
+while(ls!=StringSub1(fresh,old ,ls)){ls = StringSub1(fresh,old ,ls)} return ls}
+
+var Resolve2 = function resolve2(equation, dic){
+var Resolve1 = function(equation, dic){
+ keys = Object.keys(dic)
+ for(var i = 0; i < equation.length; i++){
+  if(keys.includes(equation[i]) ){
+   return StringSub( dic[equation[i]]  ,equation[i], equation)}  
+  } return equation}
+ while(equation!=Resolve1(equation,dic) ){equation = Resolve1(equation,dic)}
+ return equation}
+// no simultaneous recursion, run-time resolution 
+ var Resolve = function resolve(dic){
+  var out = {}; 
+  var aux = Object.keys(dic)
+  for(var i = 0; i < aux.length; i++){
+   out[aux[i]]=Resolve2(dic[aux[i]],dic)}
+   return out;}
+   
+var DispEq = function dispeq(dic){
+ var aux = Object.keys(dic)
+ var out = ""
+ for(var i = 0; i < aux.length ; i++){
+  out = out + "\n" + aux[i] + " = " + PrintExp(TermParse( (dic[aux[i]]).join(" ") )) + "\n: " + 
+  PrintExp(Typing(TermParse(dic[aux[i]].join(" ")), Envi ) )
+  }
+  return out  }   
+   
+// Typing two dics, second one with capitals, resolve symbols the same way
+ // take this as already resolved
+ var TypeEq = function typeeq(first,second){
+ if(Atoms.includes(first[0]) && Atoms.includes(second[0])){
+   return VarEq(first, second)}
+ if(first[0] == "arrow" && second[0] =="arrow"){
+  return typeeq(first[1],second[1]) && typeeq(first[2],second[2])}
+  
+   if(first[0] =="forall"  && second[0] =="forall")
+   { if( VarEq(first[1],second[1])){
+   return TypeEq(first[2],second[2])}else
+   {return TypeEq(first[2], Substitution(first[1], second[1], second[2]) ) }
+  
+   }return false; }
+  
+var Typing = function typing(ast, dic){
+
+ if(ast[0]=="atom"){
+  
+  if((Object.keys(dic)).includes(ast[1][0])){
+  return dic[ast[1]]}else{return ["typeatom",["Untyped_Variable"]]} }
+ if(ast[0]=="pair"){return ["conjunction", typing(ast[1],dic),typing(ast[2],dic)  ]}
+ if(ast[0]=="projection" && ast[2][1]=="1" ){return typing(ast[1],dic)[1]   }
+ if(ast[0]=="projection" && ast[2][1]=="2" ){return typing(ast[1],dic)[2]   }
+ if(ast[0]=="application"){
+  var left=typing(ast[1],dic);
+  var right=typing(ast[2],dic);
+ if(left[0]=="arrow" && TypeEq(left[1], right)){return left[2]}}
+ if(ast[0]=="instantiation" && typing(ast[1],dic)[0]=="forall" ){
+    return AlphaSubstitution(ast[2], typing(ast[1],dic)[1], typing(ast[1],dic)[2]) } 
+ if(ast[0] =="lambda"){
+  if((Object.keys(dic)).includes(ast[1][1][0])){
+  return ["arrow", dic[ast[1][1]], typing(ast[2],dic) ]} else{
+   return ["arrow", ["typeatom",["Untyped_Variable"]], typing(ast[2],dic) ]   } }
+ if(ast[0] =="Lambda"){
+    var aux = FreeVar(ast[2])
+    var test = true;
+   for(var i = 0; i < aux.length; i++){
+   if( VarIncludes(FreeVar( typing(aux[i],dic)), ast[1] )==true){test = false}}
+   if(test ==true){return ["forall", ast[1], typing(ast[2],dic) ] }} return "Typing Error"} 
+  
+var VarIncludes = function(array,elem){
+   for(var i = 0 ; i< array.length; i++){
+    if(VarEq(elem,array[i])==true){return true}}
+    return false} 
+    
+// *** type inference ***
+// first tag subterms
+
+var Tagger = function tagger(ast){
+var n=0
+var Tag = function tag(ast){
+ if(ast[0]=="application"){
+  n = n+1;
+  return [[ast[0],n], tag(ast[1]),tag(ast[2])   ]  }
+ if(ast[0]=="lambda"){
+   n = n+2;
+   return [[ast[0],n-1,n], ast[1], tag(ast[2])   ]  }
+ if(ast[0]=="instantiation"){
+    n = n+1;
+    return [[ast[0],n], tag(ast[1]),ast[2]   ]  }   
+ if(ast[0]=="Lambda"){
+     var m = n + 1
+     n = n+1 + FreeVar(ast).length;
+     return [ [ast[0],m], ast[1],tag(ast[2])   ]  }
+     return ast}
+     return Tag(ast) }
+                      
+     var FreeVarTag = function freevartag(ast){
+      if (ast[0]=="atom"){return [ast];} 
+      if(Binders.includes(ast[0][0])){return ArrayRemove(ast[1], freevartag(ast[2]));} 
+      if(Binaries.includes(ast[0][0])){return freevartag(ast[1]).concat(freevartag(ast[2]));}
+       return [];}           
+     
+var Delta = function delta(ast, typ){
+ if(ast[0][0]=="application"){
+  return delta(ast[2], ["typeatom", [ast[0][1].toString()]]).concat(delta(ast[1],
+    ["arrow", ["typeatom", [ast[0][1].toString() ] ], typ] )) }
+  if(ast[0][0]=="lambda" ){
+     return  delta(ast[1], ["typeatom", [(ast[0][1]).toString() ]]).concat( delta(ast[2], ["typeatom", [(ast[0][2]).toString()]]) ) } 
+  if(ast[0][0]=="instantiation"){
+      return delta(ast[1],  ["forall", ["typeatom" , [ast[0][1].toString()]],
+      ["invsub",  typ, [["typeatom" , [ast[0][1].toString()]] ,
+       ast[2]   ]  ]]  )}   
+   if(ast[0]=="atom"){return [ [ast, typ]]}
+   if(ast[0][0]=="Lambda"){
+    return delta(ast[2], ["typeatom", ast[0][1].toString()] ).concat(  
+   FreeVarTag(ast[2]).map(x => [x, ["typeatom", [(FreeVarTag(ast[2]).indexOf(x) + 1 + ast[0][1]).toString()]]]))}}   
+              
+ var Epsilon = function epsilon(ast, typ){
+         if(ast[0][0]=="application"){
+          return epsilon(ast[2], ["typeatom", [ast[0][1].toString()]] ).concat(epsilon(ast[1],
+            ["arrow", ["typeatom", [ast[0][1].toString() ] ], typ] )) }
+            if(ast[0][0]=="lambda" ){
+      
+  return epsilon(ast[2], ["typeatom",
+              [(ast[0][2]).toString()]]).concat( [ [typ  , ["arrow", ["typeatom", [(ast[0][1]).toString()]] , ["typeatom",[(ast[0][2]).toString()] ] ] ]] ) 
+         }    
+  if(ast[0][0]=="instantiation"){
+      
+    return epsilon(ast[1],  ["forall", ["typeatom" , [ast[0][1].toString()]],
+              ["invsub",  typ, [["typeatom" , [ast[0][1].toString()]] ,
+               ["typeatom" , ast[2] ]  ]  ]]  )}   
+     
+   if(ast[0]=="atom"){return []}
+       if(ast[0][0]=="Lambda"){
+       
+     return  epsilon(ast[2], ["typeatom", (ast[0][1]).toString()] ).concat( [ [ typ, ["forall", ast[1], ["typeatom",[(ast[0][1]).toString()]] ] ] ])}
+    }        
+var Kappa = function kappa(ast, typ){
+     if(ast[0][0]=="application"){
+      return kappa(ast[2], ["typeatom", [ast[0][1].toString()]]).concat(kappa(ast[1],
+        ["arrow", ["typeatom", [ast[0][1].toString() ] ], typ] )) }
+        if(ast[0][0]=="lambda" ){
+       return   kappa(ast[2], ["typeatom", [(ast[0][2]).toString() ]]  )   } 
+  if(ast[0][0]=="instantiation"){
+      return kappa(ast[1],  ["forall", ["typeatom" , [ast[0][1].toString()]],
+          ["invsub",  typ, [["typeatom" , [ast[0][1].toString()]] ,
+            ast[2]   ]  ]]  ).concat([ [ ["typeatom" , [ast[0][1].toString()]],
+    ["invsub",  typ, [ ["typeatom" , [ast[0][1].toString()]], ast[2] ]   ]]]  )}   
+     
+  if(ast[0]=="atom"){return []}
+  var Generator = function generator(a,n,m){
+           var out = [[a,["typeatom", [n.toString() ]] ]]
+           for(var i = 1; i < m+1; i++){
+            var aux = n+ i;
+            out = out.concat([["neg", a, ["typeatom", [aux.toString() ]]   ]  ])
+           }return out        } 
+         if(ast[0][0]=="Lambda"){
+           return kappa(ast[2], ["typeatom", ast[0][1].toString()] ).concat(Generator( ast[1] , ast[0][1], FreeVarTag(ast[2]).length ) ) }}
+           
+           
+  var Extract = function extract(delt){
+   var aux = {}
+   for(var i = 0; i < delt.length; i++){ aux[delt[i][0]] =[] }
+ for(var i = 0; i < delt.length; i++){ aux[delt[i][0]] = aux[delt[i][0]].concat([delt[i][1]]) }
+ var aux2 = Object.keys(aux)
+ var aux3 = []
+ for(var i = 0; i< aux2.length; i++){aux3 = aux3.concat([aux[aux2[i]]])  }
+ return aux3 }
+
+ var ExtractTyp = function extract(delt){
+  var aux = {}
+  for(var i = 0; i < delt.length; i++){ aux[delt[i][0]] =[] }
+for(var i = 0; i < delt.length; i++){ aux[delt[i][0]] = aux[delt[i][0]].concat([delt[i][1]]) }
+return aux}
+
+var PrintOcc = function printocc(kap){
+ var out =""
+ for(var i = 0; i < kap.length; i++){
+  if(kap[i][0]!="neg"){
+  out = out + "\nOcc("+ PrintExp(kap[i][0]) +" , "+ PrintExp(kap[i][1])+")"}else
+    {out = out + "\n ~Occ("+ PrintExp(kap[i][1]) +" , "+ PrintExp(kap[i][2])+")"}}
+     return out;}
+  
+var PrintMultTyp = function printmult(mul){
+ var aux = Object.keys(mul);
+ var aux2 = "";
+ var Aux = function aux(mult){
+  var ot = PrintExp(mult[0])
+  for(var i = 1 ; i < mult.length; i++){ot = ot + " = " + PrintExp(mult[i])} 
+  return ot }
+  for(var i = 0; i < aux.length; i++){
+  aux2 = aux2 + aux[i].substring(5,) + " : " + Aux(mul[aux[i]])+"\n"}
+ return aux2}
+
+var PrintMult = function printmult(mul){
+ var aux2 =""
+ var Aux = function aux(mult){
+  var ot = PrintExp(mult[0])
+  for(var i = 1 ; i < mult.length; i++){ot = ot + " = " + PrintExp(mult[i])} 
+ return ot 
+ }
+ for(var i = 0; i < mul.length; i++){
+  aux2 = aux2 + Aux(mul[i])+"\n" } 
+  return aux2}
+           
+var Multisystem = function multisystem(term){
+
+ var t = TermParse(term);
+ var ty = TypeParse("S");
+ var s = Tagger(t);
+ var del = Delta(s,ty);
+ var ext = Extract(del) 
+ var ext2 = ExtractTyp(del)
+ var aux = ext.concat(Epsilon(s,ty)) 
+ return PrintMultTyp(ext2) + "\n"+ PrintMult(aux) + "\n" + PrintOcc(Kappa(s,ty))
+}           
+
+// ***    Random Term Generator   ***
+
+var RanBind = function ranbin(){
+ var aux = Math.trunc(Math.random() * 4);
+ switch(aux){
+ case 0:
+  return "lambda"
+ case 1:
+  return "Lambda"
+ case 2:
+   return "instantiation"
+ case 3:
+  return "application" }}
+ 
+  var RanTerVar = function rantervar(medvar){
+   var aux = Math.trunc(Math.random() * medvar)
+   return ["atom", ["x_"+aux] ]}
+ 
+  var RanTypVar = function rantypvar(medvar){
+   var aux = Math.trunc(Math.random() * medvar)
+   return ["typeatom", ["X_"+aux]]}
+ 
+var RandomTerm = function randomterm(meddepth, medvar){
+   //geometric distribution
+   var aux = Math.trunc(Math.random() * meddepth);
+   if(aux ==0){ return RanTerVar(medvar)}
+   var aux =  RanBind();
+   switch(aux){
+   case "lambda":
+    return ["lambda", RanTerVar(medvar), randomterm(meddepth,medvar) ] 
+   case "Lambda":
+    return ["Lambda", RanTypVar(medvar), randomterm(meddepth,medvar) ] 
+   case "application":
+    var aux = randomterm(meddepth,medvar)
+    while(aux[0]=="Lambda"){aux = randomterm(meddepth,medvar)}
+      return ["application", aux, randomterm(meddepth,medvar) ]     
+   case "instantiation":
+    return ["instantiation", randomterm(meddepth,medvar), RanTypVar(medvar) ]  }}
+ 
+// Typability
+    
+
+ var Cycle = function cycle(graph,visited,place){
+     var aux = graph[place];
+     if(aux.length==0){return false}
+     for(var i = 0; i< aux.length; i++){
+      if(i==aux[i] || visited.includes(aux[i])==true){
+       return true}
+      if(cycle(graph, visited.concat([place]), aux[i] )==true){
+      return true}}  return false }
+  
+  
+ var MultEl = function multel(elem,array){
+       
+       if(array.length==0){return false} 
+        for(var i = 0; i <array.length; i++){
+         if(TypeEq(elem,array[i])){return true}}
+         return false }
+         
+ var MultCon = function multcon(array1,array2){
+      if(array1.length==0){return true} 
+      for(var i = 0; i< array1.length; i++){
+       if(MultEl(array1[i],array2)==false){return false}}   
+       return true }
+       
+ var MultEq = function multeq(array1,array2){
+        return MultCon(array1,array2) && MultCon(array2,array1)
+       } 
+          
+ var MultIntersection = function multintersection(array1,array2){
+        var aux = []
+        for(var i = 0; i< array1.length; i++){
+         if(MultEl(array1[i],array2)==true && MultEl(array1[i],aux)==false){aux.push(array1[i])}}
+         return aux}  
+   
+          
+ var MultUnion = function multunion(array1,array2){
+              var aux = []
+              for(var i = 0; i< array1.length; i++){
+               if(MultEl(array1[i],aux)==false){aux.push(array1[i])}}
+               for(var i = 0; i< array2.length; i++){
+                if(MultEl(array2[i],aux)==false){aux.push(array2[i])}}
+             return aux}  
+ 
+ var MultRemove = function multremove(elem, mult){
+  var aux = []
+  for(var i = 0; i< mult.length; i++)
+   { if(TypeEq(elem, mult[i])==false) { aux.push(mult[i]) } }
+   
+  return aux}
+             
+     
+var ArrayRemove2 = function arrayremove2(elem,arr){
+  var aux = []
+  for(var i = 0; i< arr.length; i++){if(MultEq(elem,arr[i])==false){aux.push(arr[i])}} return aux}
+  
+  
+var Merge = function merge(multisystem){
+    var size = multisystem.length
+        for(var i = 0; i < size; i++){
+         for(var j = 0; j < size; j++){
+          if(i!=j){
+           if( MultIntersection(multisystem[i],multisystem[j]).length >0 ){
+            var aux1 = MultUnion(multisystem[j], multisystem[i])
+            var aux2 = ArrayRemove2(multisystem[i], multisystem);
+            var aux3 = ArrayRemove2(multisystem[j], aux2);
+            return aux3.concat([aux1]) }} } } 
+            return multisystem }
+  
+    var ArrowIndexes = function arrowindexes(multiequation){
+     var aux = []
+     for(var i = 0; i < multiequation.length; i++){
+      if(multiequation[i][0]=="arrow"){aux.push(i)}}         
+          return aux  }
+ 
+   var ArrowSplitEq = function arrowsplot(multiequation){
+   var result = multiequation
+   var aux = ArrowIndexes(multiequation)
+    if(aux.length > 1){
+   result = MultRemove(multiequation[aux[0]],multiequation )  
+     return [result, [ multiequation[aux[0]][1], multiequation[aux[1]][1]], [ multiequation[aux[0]][2], multiequation[aux[1]][2] ]   ] }
+   return [multiequation]
+    }           
+   var ForallIndexes = function arrowindexes(multiequation){
+     var aux = []
+     for(var i = 0; i < multiequation.length; i++){
+      if(multiequation[i][0]=="forall"){aux.push(i)}}         
+          return aux  }
+ 
+    var ForallSplitEq = function arrowsplot(multiequation){
+          var result = multiequation
+          var aux = ForallIndexes(multiequation)
+           if(aux.length > 1){
+          result = MultRemove(multiequation[aux[0]],multiequation )  
+            return [result, [ multiequation[aux[0]][1], multiequation[aux[1]][1]], [ multiequation[aux[0]][2], multiequation[aux[1]][2] ]   ] }
+            return [multiequation]      }
+
+    var Solve = function solve(multisystem){
+     var aux = Merge(multisystem);
+var auxx = Merge(multisystem);     for(var i = 0; i < aux.length; i++) {
+      if(ArrowIndexes(aux[i]).length > 1){
+      
+      var aux2 = ArrayRemove2(aux[i],aux)
+       
+      var aux3 = aux2.concat(ArrowSplitEq(aux[i] ) )
+     
+     return aux3
+     }}
+     for(var i = 0; i < auxx.length; i++) {
+      if(ForallIndexes(auxx[i]).length > 1){
+      var aux2 = ArrayRemove2(auxx[i],aux)
+      var aux3 = aux2.concat(ForallSplitEq(auxx[i] ) )
+       return aux3}}
+    return auxx 
+    }
+    
+    var EResolve = function resolve(multisystem){
+     while(Solve(multisystem).length!= multisystem.length){multisystem = Solve(multisystem) }
+     
+   //   while(multisystem.length!=Expunge(multisystem).length){multisystem = Expunge(multisystem)} 
+     return multisystem } 
+    
+    //bullet Fat      
+     
+  var BDelta = function bdelta(ast, typ){
+        if(ast[0][0]=="application"){
+         return bdelta(ast[2], ["typeatom", [ast[0][1].toString()]]).concat(bdelta(ast[1],
+           ["arrow", ["typeatom", [ast[0][1].toString() ] ], typ] )) }
+         if(ast[0][0]=="lambda" ){
+            return  bdelta(ast[1], ["typeatom", [(ast[0][1]).toString() ]]).concat( bdelta(ast[2], ["typeatom", [(ast[0][2]).toString()]]) ) } 
+         if(ast[0][0]=="instantiation"){
+             return bdelta(ast[1],  ["forall", ["typeatom" , [ast[0][1].toString()] ],
+          typ ]  )}   
+          if(ast[0]=="atom"){return [ [ast, typ]]}
+          if(ast[0][0]=="Lambda"){
+           return bdelta(ast[2], ["typeatom", [ast[0][1].toString()] ] ).concat(  
+          FreeVarTag(ast[2]).map(x => [x, ["typeatom", [(FreeVarTag(ast[2]).indexOf(x) + 1 + ast[0][1]).toString()]]]))}}   
+ 
+      
+  var BEpsilon = function bepsilon(ast, typ){
+                if(ast[0][0]=="application"){
+                 return bepsilon(ast[2], ["typeatom", [ast[0][1].toString()]] ).concat(bepsilon(ast[1],
+                   ["arrow", ["typeatom", [ast[0][1].toString() ] ], typ] )) }
+                   if(ast[0][0]=="lambda" ){
+      
+         return bepsilon(ast[2], ["typeatom",
+                    [(ast[0][2]).toString()]]).concat( [ [typ  , ["arrow", ["typeatom", [(ast[0][1]).toString()]] , ["typeatom",[(ast[0][2]).toString()] ] ] ]] )} 
+        if(ast[0][0]=="instantiation"){
+          return bepsilon(ast[1],  ["forall", ["typeatom" , [ast[0][1].toString()]],
+          typ   ]   )}   
+        if(ast[0]=="atom"){return []}
+            if(ast[0][0]=="Lambda"){
+           return  bepsilon(ast[2], ["typeatom", [(ast[0][1]).toString()]] ).concat( [ [ typ, ["forall", ast[1], ["typeatom",[(ast[0][1]).toString()]] ] ] ])}           }   
+        
+var BMultisystem = function bmultisystem(term){
+        var t = TermParse(term);
+        var ty = TypeParse("S");
+        var s = Tagger(t);
+        var del = BDelta(s,ty);
+        var ext = Extract(del) 
+        var ext2 = ExtractTyp(del)
+        var aux = ext.concat(BEpsilon(s,ty)) 
+        return PrintMultTyp(ext2) + "\n"+ PrintMult(aux)}  
+        
+        
+var Expunge = function expunge(multisystem){
+     for(var i = 0; i < multisystem.length; i++){
+         if(multisystem[i].length ==1 && multisystem[i][0][0]!="typeatom"){
+       return ArrayRemove2(multisystem[i], multisystem )}}
+       for(var i = 0; i < multisystem.length; i++){
+      if(multisystem[i].length ==2 && multisystem[i][0][0]!="atom" && multisystem[i][0][0] == multisystem[i][1][0]){
+      return ArrayRemove2(multisystem[i], multisystem )}}
+      return multisystem }     
+                      
+var GetBMultisystem = function getbmultisystem(term){
+              var t = TermParse(term);
+              var ty = TypeParse("S");
+              var s = Tagger(t);
+              var del = BDelta(s,ty);
+              var ext = Extract(del) 
+              var ext2 = ExtractTyp(del)
+              var aux = ext.concat(BEpsilon(s,ty))
+                 return aux
+             }  
+// Graph Generation 
+        
+var Node = function node(mult){
+  var node = []
+   for(var i =0; i < mult.length; i++){
+    if(mult[i][0]=="typeatom"){node.push(mult[i])}}
+    return node }
+    
+var Where = function where(t){
+     if(t[0]=="typeatom"){return [t]}
+     if(t[0]=="arrow"){return where(t[1]).concat(where(t[2])) }
+      if(t[0]=="forall"){return where(t[2]) } 
+      return [] } 
+    
+var Vertex = function vertice(mult){
+    var vertex = []
+     for(var i =0; i < mult.length; i++){
+      if(mult[i][0]!="typeatom"){vertex.push(Where(mult[i]))} }
+      if(vertex.length > 0){return vertex[0]}else{return []} }
+     
+var FillOut = function fillout(ver, nodes){
+     var aux =[]
+    var  swit =1
+       for (var j = 0;j < ver.length; j++){
+        for (var k = 0; k < nodes.length; k++){
+         if( MultEl(ver[j],nodes[k])){aux.push(nodes[k])
+          swit = 0;}}
+          
+           if(swit!=0){aux.push([ver[j]])}
+            swit = 1  
+          } return aux } 
+ 
+     
+  
+  
+var GetNodes = function getnodes(multisystem){
+  var nodes = []        
+   for(var i = 0; i < multisystem.length; i++){
+    
+    if(Node(multisystem[i]).length > 0){
+    nodes.push(Node(multisystem[i])) }}     
+      return nodes    
+         } 
+     
+var Graph = function graph(multisystem){
+ var nodes = GetNodes(multisystem)
+ 
+ var ver = {}
+ for(var i = 0; i < multisystem.length; i++){
+  
+  if(Node(multisystem[i]).length > 0 ){
+  
+   ver[Node(multisystem[i])] = FillOut(Vertex(multisystem[i]) , nodes )}
+ 
+  }
+  return ver } 
+  
+  
+  var GenerateGraph = function generategraph(graph){
+   var res = {}
+   var aux = {}
+   var nodes = Object.keys(graph)
+   
+   for(var i = 0; i < nodes.length; i++ ){
+    aux[nodes[i]] = i}
+    
+   for(var i = 0; i < nodes.length; i++ ){
+    res[i] = graph[nodes[i]].map( x => aux[x] ) }
+     return res } 
+
+ var CheckCycle = function checkcycle(graph){
+   for(var i = 0; i < graph.length; i++)
+  {
+   if (Cycle(graph,[], i) ){return true} 
+  }    
+   return false
+     }
+     
+     
+     var PrintGraph = function printgraph(graph){
+      var out = ""
+      for(var i = 0; i < Object.keys(graph).length; i++){
+      out = out + i + " -> "
+       for (var j = 0; j < graph[i].length; j++){
+        
+       graph[i][j]!=undefined? out = out + " " + graph[i][j]:out=out } 
+       out = out + "\n"} 
+       return out}   
+
+// Dic or Obj of defined symbols for new terms and types f = ... T = 
+// decompose first - atomic values numbers, strings, bools and pairs of these...
+// *** Type inference from Environment ***
+// *** General type inference *** Check for Untypable Terms 
+// *** Match and Let
+// *** Next: Dependent Type Theory  
+        
+    
+           
+</script><div id="test"></div>
+        <div style="text-align: right;position: fixed;z-index:9999999;bottom: 0;width: auto;right: 1%;cursor: pointer;line-height: 0;display:block !important;"><a title="Hosted on free web hosting 000webhost.com. Host your own website for FREE." target="_blank" href="https://www.000webhost.com/?utm_source=000webhostapp&utm_campaign=000_logo&utm_medium=website&utm_content=footer_img"><img src="https://cdn.000webhost.com/000webhost/logo/footer-powered-by-000webhost-white2.png" alt="www.000webhost.com"></a></div><script>function getCookie(t){for(var e=t+"=",n=decodeURIComponent(document.cookie).split(";"),o=0;o<n.length;o++){for(var a=n[o];" "==a.charAt(0);)a=a.substring(1);if(0==a.indexOf(e))return a.substring(e.length,a.length)}return""}getCookie("hostinger")&&(document.cookie="hostinger=;expires=Thu, 01 Jan 1970 00:00:01 GMT;",location.reload());var wordpressAdminBody=document.getElementsByClassName("wp-admin")[0],notification=document.getElementsByClassName("notice notice-success is-dismissible"),hostingerLogo=document.getElementsByClassName("hlogo"),mainContent=document.getElementsByClassName("notice_content")[0],wpSidebar=document.getElementById("adminmenuwrap"),wpTopBarRight=document.getElementById("wp-admin-bar-top-secondary");if(null!=wordpressAdminBody&&notification.length>0&&null!=mainContent){var googleFont=document.createElement("link");googleFontHref=document.createAttribute("href"),googleFontRel=document.createAttribute("rel"),googleFontHref.value="https://fonts.googleapis.com/css?family=Roboto:300,400,600",googleFontRel.value="stylesheet",googleFont.setAttributeNode(googleFontHref),googleFont.setAttributeNode(googleFontRel);var css="@media only screen and (max-width: 576px) {#main_content {max-width: 320px !important;} #main_content h1 {font-size: 30px !important;} #main_content h2 {font-size: 40px !important; margin: 20px 0 !important;} #main_content p {font-size: 14px !important;} #main_content .content-wrapper {text-align: center !important;}} @media only screen and (max-width: 781px) {#main_content {margin: auto; justify-content: center; max-width: 445px;} .upgrade-btn-sidebar {display: none;} #wp-toolbar .top-bar-upgrade-btn {width: 52px; height: 46px !important; padding: 0 !important;} .top-bar-upgrade-btn__text {display: none;} .dashicons-star-filled.top-bar-upgrade-btn__icon::before {font-size: 28px; margin-top: 10px; width: 28px; height: 28px;}} @media only screen and (max-width: 1325px) {.web-hosting-90-off-image-wrapper {position: absolute; max-width: 95% !important;} .notice_content {justify-content: center;} .web-hosting-90-off-image {opacity: 0.3;}} @media only screen and (min-width: 769px) {.notice_content {justify-content: space-between;} #main_content {margin-left: 5%; max-width: 445px;} .web-hosting-90-off-image-wrapper {position: absolute; right: 0; display: flex; padding: 0 5%}} @media only screen and (max-width: 960px) {.upgrade-btn-sidebar {border-radius: 0 !important; padding: 10px 0 !important; margin: 0 !important;} .upgrade-btn-sidebar__icon {display: block !important; margin: auto;} .upgrade-btn-sidebar__text {display: none;}}  .web-hosting-90-off-image {max-width: 90%; margin-top: 20px;} .content-wrapper {z-index: 5} .notice_content {display: flex; align-items: center;} * {-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;} .upgrade_button_red_sale{box-shadow: 0 2px 12px -6px #cc292f; max-width: 350px; border: 0; border-radius: 3px; background-color: #6747c7 !important; padding: 15px 55px !important;  margin-bottom: 48px; font-size: 14px; font-weight: 800; color: #ffffff;} .upgrade_button_red_sale:hover{color: #ffffff !important; background: rgba(103,71,199, 0.9) !important;} .upgrade-btn-sidebar {text-align:center;background-color:#ff4546;max-width: 350px;border-radius: 3px;border: 0;padding: 12px; margin: 20px 10px;display: block; font-size: 12px;color: #ffffff;font-weight: 700;text-decoration: none;} .upgrade-btn-sidebar:hover, .upgrade-btn-sidebar:focus, .upgrade-btn-sidebar:active {background-color: rgba(255,69,70, 0.9); color: #ffffff;} .upgrade-btn-sidebar__icon {display: none;} .top-bar-upgrade-btn {height: 100% !important; display: inline-block !important; padding: 0 10px !important; color: #ffffff; cursor: pointer;} .top-bar-upgrade-btn:hover, .top-bar-upgrade-btn:active, .top-bar-upgrade-btn:focus {background-color: #ff4546 !important; color: #ffffff !important;} .top-bar-upgrade-btn__icon {margin-right: 6px;}",style=document.createElement("style"),sheet=window.document.styleSheets[0];style.styleSheet?style.styleSheet.cssText=css:style.appendChild(document.createTextNode(css)),document.getElementsByTagName("head")[0].appendChild(style),document.getElementsByTagName("head")[0].appendChild(googleFont);var button=document.getElementsByClassName("upgrade_button_red")[0],link=button.parentElement;link.setAttribute("href","https://www.hostinger.com/hosting-starter-offer?utm_source=000webhost&utm_medium=panel&utm_campaign=000-wp"),link.innerHTML='<button class="upgrade_button_red_sale">Upgrade Now</button>',(notification=notification[0]).setAttribute("style","background-color: #f8f8f8; border-left-color: #6747c7 !important;"),notification.className="notice notice-error is-dismissible";var mainContentHolder=document.getElementById("main_content");mainContentHolder.setAttribute("style","padding: 0;"),hostingerLogo[0].remove();var h1Tag=notification.getElementsByTagName("H1")[0];h1Tag.className="000-h1",h1Tag.innerHTML="Limited Time Offer",h1Tag.setAttribute("style","color: #32454c;  margin-top: 48px; font-size: 48px; font-weight: 700;");var h2Tag=document.createElement("H2");h2Tag.innerHTML="From $0.79/month",h2Tag.setAttribute("style","color: #32454c; margin: 20px 0 45px 0; font-size: 48px; font-weight: 700;"),h1Tag.parentNode.insertBefore(h2Tag,h1Tag.nextSibling);var paragraph=notification.getElementsByTagName("p")[0];paragraph.innerHTML="Don’t miss the opportunity to enjoy up to <strong>4x WordPress Speed, Free SSL and all premium features</strong> available for a fraction of the price!",paragraph.setAttribute("style",'font-family: "Roboto", sans-serif; font-size: 18px; font-weight: 300; color: #6f7c81; margin-bottom: 20px;');var list=notification.getElementsByTagName("UL")[0];list.remove();var org_html=mainContent.innerHTML,new_html='<div class="content-wrapper">'+mainContent.innerHTML+'</div><div class="web-hosting-90-off-image-wrapper"><img class="web-hosting-90-off-image" src="https://cdn.000webhost.com/000webhost/promotions/wp-inject-default-img.png"></div>';mainContent.innerHTML=new_html;var saleImage=mainContent.getElementsByClassName("web-hosting-90-off-image")[0];wpSidebar.insertAdjacentHTML("beforeend",'<a href="https://www.hostinger.com/hosting-starter-offer?utm_source=000webhost&amp;utm_medium=panel&amp;utm_campaign=000-wp-sidebar" target="_blank" class="upgrade-btn-sidebar"><span class="dashicons dashicons-star-filled upgrade-btn-sidebar__icon"></span><span class="upgrade-btn-sidebar__text">Upgrade</span></a>'),wpTopBarRight.insertAdjacentHTML("beforebegin",'<a class="top-bar-upgrade-btn" href="https://www.hostinger.com/hosting-starter-offer?utm_source=000webhost&amp;utm_medium=panel&amp;utm_campaign=000-wp-top-bar" target="_blank"><span class="ab-icon dashicons-before dashicons-star-filled top-bar-upgrade-btn__icon"></span><span class="top-bar-upgrade-btn__text">Go Premium</span></a>')}</script><script type="text/javascript" src="https://a.opmnstr.com/app/js/api.min.js" data-campaign="f6brbmuxflyqoriatchv" data-user="71036" async></script></body></html>

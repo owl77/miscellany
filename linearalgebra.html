@@ -1,0 +1,520 @@
+<html>
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+<div style="margin:auto; width:80%">
+
+	Linear Algebra and Stochastic Functions on the script of this page:<br><br>
+	<i style="color:purple">sigmoid, Vectorsigmoid, sigmoid_prime, Vectorsigmoid_prime, Schur, MatrixMultiplication,
+	StochasticMatrix, StochasticVector, MatrixVector, MatrixTranspose, ScalarVector, ScalarMatrix, VectorAdd,
+	VectorSubstract, display, input (to input a matrix), normal, shuffle.</i><br><br>
+	
+	Using these we have ported to Javascript a Gradient Descent Python script from <a href="http://neuralnetworksanddeeplearning.com">Michael Nielsen's Page</a>.
+	You will be able to save and upload networks and training data locally using your browser (and later we can use the server).<br><br>
+	
+	Our main interest is in natural language processing: recognizing an author by a random sample and automatic translation based on dictionaries and samples.
+	We develop a disambiguification function to assign each lexical unit to the most probable lexeme of an ideal dictionary. These lexemes and lexical expressions are numerated so the text is converted into a unidimensional integer array. We believe that this preprocessing at the semantic level might be crucial for greater efficiency. <br><br>
+	
+	We take an a fixed input size and pad with zeroes if necessary. If we have as training data the dictionary (inputs of size one) for (cat)(gato) and (duck)(pato) and the sample (the cat eats)(o gato come) then it follows from linearity that for (the duck eats), (o pato come) will be the output conforming to a chosen threshold.<br><br>
+	
+ The <span style="color:pink">Network</span> class is initialized by an array of integers which give the number of neurons in each
+ layer, the first entry being the input and the last the output. When an instance is created the <i>weights</i> and <i>biases</i> are initialized randomly.<br><br>
+ 
+ 
+ <span style="color:pink">Network</span> objects can be saved and loaded in <span style="color:blue">JSON</span> format.
+ <br><br> 
+	
+	Training and test data are loaded in a "raw" format of a single string of a numerical values separated by single spaces.
+	This is then formatted according to the dimensions of the network. This is to make experimentation easy as well as direct integration with text-processing tools. It is loaded in to the global array <span style="color:orange">rawdata</span> and we call the function  <span style="color:teal">format(input_size, output_size, total_size)</span> to format the data into the global varible formatdata which is
+	an array of length two arrays consisting of input and output values. 
+	
+	Note that we can choose only a portion of the total file. We shall add an initial offset parameter later.<br>
+	The most important methods are <span style="color:green">.SGD(training_data, epochs, mini_batch_size, eta, test_data)</span> and
+	<span style="color:green">.feedforward(input)</span>.<br>
+	The test_data parameter is optional. 
+	
+	
+	<br><br>
+	
+	
+	<br>
+	
+	
+	
+	
+	 <textarea name="textarea" id = "output" style="width:800px;height:200px;color:green"></textarea><br>
+	<input type="text" id="input" style="width:780px;" value="Network"/><br>
+	<input type ="button" id="enter"  style="color:purple" value=">> (Enter) " onclick= "doo()"/> <input type ="button" id="clear" value="Clear" onclick= "doo2()"/><br>
+	<span style="color:darkgrey; font-family:courier; background-color:lightblue">load network</span><br>
+	
+	
+	
+	<input type="file" id="your-files2" multiple value="Load Network" ><br>
+	<input type ="button" id="save" value="Save Network" onclick= "sv()"/><br>
+	<p id="dlink"></p>
+	<span style="color:darkgrey; font-family:courier; background-color:lightblue">load raw training data</span><br>
+	<input type="file" id="your-files" multiple><br>
+	
+</div>
+
+<script>
+	var MyNetwork;
+	
+	function sv(){
+		
+		
+		var content = JSON.stringify(MyNetwork);
+				uriContent = "data:application/octet-stream," + encodeURIComponent(content);
+				document.getElementById("dlink").innerHTML = "<a href=" + uriContent + " download=\"MyNetwork.json\">Here is the download link</a>";
+	}	
+	
+	var output = "";
+	function save(network){
+		
+		w = []; b = [];
+		for(var i = 0; i< network.weights.length;i++){
+			for (var j = 0; j < network.weights[i].length;j++){
+				b.push(network.biases[i][j]);
+				for(var k =0; k< network.weights[i][j].length;k++ ){
+					w.push(network.weights[i][j][k]);
+					
+				}
+				
+			}
+			
+		}
+		
+		return [w,b];		
+}	
+
+function save2(network){var q = save(network); out(q[0].join(" "));out(q[1].join(" ")); }
+	
+	out("Neural Network Explorer 2018\nStochastic Gradient Descent in Javascript\nBased on the Python Code of Michael Nielsen\n\n");
+    
+    
+    function doo(){
+         var input = document.getElementById("input").value;
+		 out("\n"+eval(input)+"\n");	 }
+	 function doo2(){ output = ""; out(""); }
+	 
+	function out(s){
+	    output = output + s;
+	    document.getElementById("output").value = output;}
+
+
+	var rawdata =[];
+    var formatdata = []
+	function format(input,output,size){
+	var aux = rawdata.split(" ")
+					
+	for(j = 0; j < size;j++){
+		var q = [];
+		for(var i = 0; i < input;i++){
+			q.push(aux[j*(input+output)+i]);}
+		var r = [];
+		
+		for(var i = 0; i< output;i++){
+			
+			r.push(aux[j*(input+output) +input+i]);
+			
+		}	formatdata.push([q,r]);	}
+	
+		return "Formating complete."	}
+		
+		
+		
+		
+		function ld(){}
+	
+
+	    var reader2 = new FileReader();
+	    reader2.onload = function(event) {
+	        var contents = event.target.result;
+       
+	        MyNetwork= JSON.parse(contents);
+			        //also must add new symbols. Check if not circular and identify primitive predicates
+	      };
+		
+
+
+		  reader2.onerror = function(event) {
+		      console.error("File could not be read! Code " + event.target.error.code);
+		  };
+
+
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        var contents = event.target.result;
+       
+        rawdata= contents;
+		        //also must add new symbols. Check if not circular and identify primitive predicates
+      };
+
+reader.onerror = function(event) {
+    console.error("File could not be read! Code " + event.target.error.code);
+};
+
+var control = document.getElementById("your-files");
+control.addEventListener("change", function(event) {
+                         
+                         // When the control has changed, there are new files
+                                                  var i = 0,
+                         files = control.files,
+                         len = files.length;
+                         
+                         for (; i < len; i++) {
+                         console.log("Filename: " + files[i].name);
+                         console.log("Type: " + files[i].type);
+                         console.log("Size: " + files[i].size + " bytes");
+                         reader.readAsText(files[i]) ;                                 }
+                         
+                         }, false);
+
+
+						 var control2 = document.getElementById("your-files2");
+						 control2.addEventListener("change", function(event) {
+                         
+						                          // When the control has changed, there are new files
+						                                                   var i = 0,
+						                          files = control2.files,
+						                          len = files.length;
+                         
+						                          for (; i < len; i++) {
+						                          console.log("Filename: " + files[i].name);
+						                          console.log("Type: " + files[i].type);
+						                          console.log("Size: " + files[i].size + " bytes");
+						                          reader2.readAsText(files[i]) ;                                 }
+                         
+						                          }, false);
+
+
+</script>
+
+
+
+
+<script>
+
+	function sigmoid(z){
+		
+		return 1.0/(1.0 + Math.exp(-z));
+		
+	}
+	
+	function Vectorsigmoid(v){
+		q = [];
+		for(var i = 0; i< v.length;i++){
+		
+			q.push(sigmoid(v[i]) );	
+			
+		}
+		return q;
+		
+	}
+	
+	
+	function sigmoid_prime(z){
+		
+		return sigmoid(z)*(1 - sigmoid(z));
+	}
+	
+	function Vectorsigmoid_prime(v){
+		q = [];
+		for(var i = 0; i< v.length;i++){
+		
+			q.push(sigmoid_prime( v[i]) );	
+			
+		}
+		return q;
+		
+	}
+	
+	
+		
+function Schur(vector1,vector2){
+			q = [];
+			for(var i = 0; i < vector1.length; i++){
+				q.push(vector1[i]*vector2[i]);}
+			return q;}
+
+			function VectorstoMatrix(vector1,vector2){
+				q = [];
+				for(var i = 0; i < vector1.length; i++){
+					aux = [];
+					for(var j = 0; j < vector2.length; j++){
+						aux.push(vector1[i]*vector2[j]);}
+						q.push(aux);
+					
+					
+					
+				}
+				
+				return q;
+				
+			}
+		
+function MatrixMultiplication(matrix1,matrix2){
+			q = [];
+			for(var i = 0; i< matrix1.length; i++ ){
+				aux = [];
+				for(var j = 0; j< matrix2[0].length;j++){
+					sum = 0;
+					for( var k = 0; k< matrix1[0].length; k++){
+						sum = sum + matrix1[i][k]*matrix2[k][j];		}
+							aux.push(sum);	}
+							q.push(aux);}
+							return q;}
+
+							function MatrixAdd(matrix1,matrix2){
+								q = [];
+								for(var i = 0; i < matrix1.length; i++){
+									aux = [];
+									for(var j = 0; j< matrix1[0].length; j++){
+										aux.push(matrix1[i][j]+ matrix2[i][j]);
+										
+										
+									}
+									q.push(aux);
+								}
+								
+								return q;
+								
+							}
+							
+							function ZeroMatrix(lines,columns){
+								q = [];
+								for(var i = 0; i < lines;i++){aux = []; for(var j = 0; j <columns;j++){aux.push(0); } q.push(aux); }
+								
+								return q;
+								
+							}
+							
+							
+							function ZeroVector(size){q = [];for(var i =0;i< size;i++){q.push(0);  } return q; }
+							
+							
+
+function StochasticMatrix(lines,columns){
+								q = [];
+								for(var i = 0; i < lines;i++){aux = []; for(var j = 0; j <columns;j++){aux.push(normal(0,1,100) ); } q.push(aux); }
+								
+								return q;
+								
+							}							
+							
+							
+function StochasticVector(size){q = [];for(var i = 0; i< size; i++){q.push(normal(0,1,100)); }return q; } 							
+	
+	
+							
+
+function MatrixVector(matrix, vector){
+								
+	q = [];
+	for(var i = 0; i< matrix.length; i++ ){
+			sum = 0;
+			for( var k = 0; k< vector.length; k++){
+				sum = sum + matrix[i][k]*vector[k];}
+					q.push(sum);}
+					return q;						}
+
+
+function MatrixTranspose(matrix){
+	q = [];
+	for(var i = 0; i< matrix[0].length; i++){
+		aux = [];
+		for(var j = 0; j< matrix.length; j++){ 
+			aux.push(matrix[j][i]);
+	
+	   } 
+	   q.push(aux);
+   
+   }
+   return q;}
+	
+   function ScalarVector(c,vector){
+	   aux = [];
+	   for(var i = 0; i < vector.length; i++){
+		   aux.push(c*vector[i]);
+		
+	   }
+
+
+	   return aux;
+	
+   }	
+	
+   function ScalarMatrix(c, matrix){
+   q = [];
+for(var i = 0; i< matrix.length; i++){
+	aux = [];
+	for(var j = 0; j< matrix[0].length; j++){ 
+		aux.push(c*matrix[i][j]);
+	
+	
+}
+q.push(aux)	
+	
+}
+
+return q;
+}
+
+
+function VectorAdd(vector1,vector2){
+	q = [];
+	for(var i = 0; i < vector1.length; i++){q.push(vector1[i]+vector2[i]);  }
+	return q;	
+}
+
+function VectorSubtract(vector1,vector2){
+	q = [];
+	for(var i = 0; i < vector1.length; i++){q.push(vector1[i]-vector2[i]);  }
+	return q;	
+}
+
+
+
+function display(matrix){
+	for(var i = 0; i< matrix.length; i++){
+		
+		console.log(matrix[i].join(" "));
+	
+}
+}
+
+function input(string){
+	q = [];
+	aux = string.split(",");
+	for(var i = 0; i< aux.length; i++){
+		aux2 = aux[i].split(" ");
+		q.push(aux2);
+		
+	}
+
+
+
+	return q;
+
+  }
+
+  function normal(mu, sigma, nsamples){ // using central limit
+      if(!nsamples) nsamples = 3
+      if(!sigma) sigma = 1
+      if(!mu) mu=0
+
+      var run_total = 0
+      for(var i=0 ; i<nsamples ; i++){
+         run_total += Math.random()
+      }
+
+      return sigma*(run_total - nsamples/2)/(nsamples/2) + mu
+  }
+
+  function shuffle(array) {
+    var currentIndex = array.length, temporaryValue, randomIndex;
+
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+
+    return array;
+  
+}
+
+
+</script>
+<script>
+	function Network(sizes){
+	this.num_layers = sizes.length;
+	this.sizes = sizes;
+	this.biases = (function(){var q = []; for(var i = 1; i< sizes.length;i++){q.push(StochasticVector(sizes[i]) );}return q;})();
+	this.weights = (function(){var q = []; for(var i = 1; i< sizes.length;i++){q.push(StochasticMatrix(sizes[i],sizes[i-1]) );}return q;})();
+	this.feedforward = function(a){for(var i = 0; i <  this.sizes.length-1;i++)
+	{a = Vectorsigmoid(VectorAdd( MatrixVector(this.weights[i], a) , this.biases[i])) ;} return a; }
+
+	this.SGD = function(training_data, epochs, mini_batch_size, eta, test_data){
+	n_test = test_data.length;
+	n = training_data.length;
+	for(var j = 0; j < epochs; j++){
+	shuffle(training_data);
+	var mini_batches = [];
+	for(var k = 0; k< n; k = k+ mini_batch_size){
+	mini_batches.push(training_data.slice(k, k+ mini_batch_size )  );}
+	for(var i = 0; i< mini_batches.length;i++){
+	this.update_mini_batch(mini_batches[i], eta);}
+	//out("Epoch "+ String(j))
+	;}
+
+	out("\nTraining complete.\n")}
+
+	this.update_mini_batch = function(mini_batch,eta){
+		var nabla_b = [];var nabla_w = [];
+		for(var i = 0; i< this.biases.length;i++){ nabla_b.push(ZeroVector(this.biases[i].length ));}
+		for(var i = 0; i< this.weights.length;i++){ nabla_w.push(ZeroMatrix(this.weights[i].length,this.weights[i][0].length));}
+		for(var j = 0; j < mini_batch.length; j++){
+			var aux = this.backprop(mini_batch[j][0], mini_batch[j][1] );
+			var delta_nabla_b = aux[0]; var delta_nabla_w = aux[1];
+			var q = [];
+			for(var i = 0; i< this.biases.length;i++){q.push(VectorAdd(nabla_b[i], delta_nabla_b[i]));  }
+		    nabla_b = q; var q = [];
+			for(var i = 0; i< this.weights.length;i++){q.push(MatrixAdd( nabla_w[i],delta_nabla_w[i])) ;  }
+		    nabla_w = q; }
+		   var q = [];
+		  for(var i = 0; i< this.weights.length;i++) {
+			  q.push( MatrixAdd( this.weights[i], ScalarMatrix(-eta/mini_batch.length, nabla_w[i]) ) );}
+			  this.weights = q;
+			  var q = [];
+			  for(var i = 0; i< this.biases.length;i++){
+				  q.push( VectorAdd( this.biases[i],    ScalarVector(-eta/mini_batch.length, nabla_b[i]) ) );}
+				  this.biases = q;}
+
+
+	this.backprop = function(x,y){
+		var nabla_b = []; var nabla_w = [];
+		for(var i = 0; i< this.biases.length;i++){ nabla_b.push(ZeroVector(this.biases[i].length ) ); }
+		for(var i = 0; i< this.weights.length;i++){ nabla_w.push(ZeroMatrix(this.weights[i].length,this.weights[i][0].length   ) ); }
+		var activation = x;
+		var activations = [x];
+		var zs = [];
+		for(var i = 0; i< this.sizes.length-1;i++){
+			var z = VectorAdd(MatrixVector(this.weights[i],activation), this.biases[i]);
+			zs.push(z);
+			activation = Vectorsigmoid(z);
+			activations.push(activation);}
+	
+		var delta = Schur(VectorSubtract(activations[activations.length-1],y), Vectorsigmoid_prime( zs [zs.length-1]  ) );
+	
+		nabla_b[nabla_b.length-1] = delta;
+		nabla_w[nabla_w.length-1] =   VectorstoMatrix(delta, activations[activations.length-2]) ; 
+		for(var l = 2; l < this.num_layers; l++){
+			var z = zs[zs.length -l];
+			var sp = Vectorsigmoid_prime(z);	
+			delta = Schur(MatrixVector( MatrixTranspose(this.weights[this.weights.length-l+1]), delta) , sp);
+			nabla_b[nabla_b.length-l] = delta;
+			nabla_w[nabla_w.length-l] = VectorstoMatrix(delta, activations[activations.length-l-1]);}
+			return [nabla_b,nabla_w ]}
+
+	this.evaluate = function(test_data){
+		var test_results = [];
+		for(var i = 0; i < test_data.length; i++){
+			test_results.push([ Math.max.apply(null, this.feedforward(test_data[i][0])), test_data[i][1] ] );}
+		var sum = 0;
+		for(var i = 0; i< test_results.length; i++){
+			if(test_results[i][0]== test_results[i][1]){sum = sum + 1;}}
+			return sum;}
+
+
+	}
+	
+	</script>
+	
+	
+	</html>

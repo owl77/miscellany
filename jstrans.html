@@ -1,0 +1,848 @@
+<html>
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+<div style="margin:auto; width:80% ;border:1px solid blue;padding-left:20px; padding-right: 20px; padding-top: 20px; padding-bottom: 20px">
+	<br>
+We use an alternative expanded version of formal grammars and apply the same system of categories to all morphological and even syntactic categories.  We are currently porting the program from Python to Javascript. We use a sandhi function which interprets coded morphological rule information in the spirit of Mel'chuk's <i>Morphologie Générale</i>. For instance, for the present tense of the Portuguese verb <i>amar</i> we have <br><br>amam -(m3+n)o = amam -no <br><br>but<br><br> amo -(m3+n)o = amo -o <br><br>Try it on this page with your Browser's Javascript Console:<br><br>
+>> <span style="color:blue ; font-family:verdan">sandhi</span>("ama -(m3+n)o")<br><br>
+We will also implement a final sandhi which for instance for <i style="color:green">de + os</i> yields <i style="color:purple">dos</i>.<br>
+
+One problem is the ambiguity of noun premodifers, specially the zero plural premodifier in English as in <i style="color:purple">he shoots lions, lions caught him, lions are ferocious.</i> In a translation such may have to be rigorously distinguished. Consider for instance how we must use the partitive <i style="color:pink"> de</i> in French.<br><br>
+
+A basic class is <span style="color:purple">Word</span> which embodies the <i>morphological</i> information and a list of lexeme roots for each morphological category together with a set of methods <span style="color:green">.flex, .flexcheck, .parse, .parsecat, .parsecheck, .permuparse</span> for parsing and flection. We have furthemore two <i>synactic</i> classes <span style="color:purple">ASynt</span> and <span style="color:purple">OSynt</span>. Instances of these three classes are linked together to form a tree having leaves Word instances. This tree is the first step towards a complete description of the grammar and vocabulary of a language. There remains the problem of morphological, syntactic and semantic ambiguities which will be discussed further ahread. In the script on this page we have included an instance of the Word class <span style="color:green">Enoun</span>.<br><br>
+The system of categories we use in this example consists of <i>number, person, gender</i> and <i>case</i>. We apply this to all morphological types. This might seem
+strange for English put is perfectly natural and economic for a translation system which aims to be universal (just consider how verbs have gender in the Semitic languages). Use the Console and type <span style="color:purple">categories</span>.<br><br>
+<span style="color:purple">Enoun</span><span style="color:green">.parse(</span><span style="color:blue">"cats"</span>) gives the morphological root
+together with all possible categories whose flections yields "cats". This is redundant for an ordinary parser but crucial for translation. The reader may care to
+expand the vocabulary of roots with <span style="color:purple">Enoun</span><span style="color:green">.root.push</span>("<span style="color:grey">newroot</span>").
+Irregularities are also treated; in this case the irregular plurals of English nouns. We also have a method of dealing with preopositional verbs by introducing a temporary special symbol to link the preposition to the verb.
+<br><br>
+Here is the translation class:<br><br>
+<img src="dic.jpg" width="900px">	<br>
+
+Open the Console and try <span style="color:purple">Dic</span>.<span style="color:green">trans</span>("<span style="color:grey">I love the cats</span>")
+</div>
+
+<script>
+
+	function arrayEquals(a1,a2) {
+	    /* WARNING: arrays must not contain {objects} or behavior may be undefined */
+	    return JSON.stringify(a1)==JSON.stringify(a2);
+	}
+
+	function arrayContains(array, el){
+		
+		for(var n = 0; n <array.length; n++){if(arrayEquals(array[n],el)){return true}}
+		
+return false		
+	}
+
+
+
+	var number = ["sing","plu"]
+	var gender = ["fem","masc","neut"]
+	var person = ["1st","2nd","3rd"]
+	var Case =   ["subj","gen","obj"]
+
+
+
+var	categories = [] 
+	
+	for (n = 0; n < number.length; n++){
+	 for (g = 0; g < gender.length; g++){
+	  for (p = 0; p < person.length; p++){
+	   for (c = 0; c < Case.length; c++){
+		   categories.push([number[n],gender[g],person[p],Case[c]]);
+  }}}
+ }
+
+ sym = {"number":0,"gender":1,"person":2,"case":3}
+
+ function sandhi(s){
+	 var aux = ""; 
+	 var intron = -1;
+	 var exon = -1 ;  
+  for (k=0; k <s.length;k++){
+    if (s[k]=="("){
+		intron = k;  
+      for(var m = k; m < s.length; m++){
+        if (s[m]==")"){
+			exon = m;  
+			aux = s.slice(intron+1,exon); }}}}
+					
+  if (intron!=-1){         
+   if (s[intron-parseInt(aux[1])] == aux[0] && aux[2]=="+"){
+	   return s.slice(0,intron).concat(aux[3].concat(s.slice(exon+1, s.length)));}
+   else{
+	   return s.slice(0,intron).concat(s.slice(exon+1,s.length));
+   }}
+  else{
+	  return s;}
+}
+
+ function sandhicomb(s){
+	 var aux = ""; 
+	 var intron = -1;
+	 var exon = -1 ;  
+  for (k=0; k <s.length;k++){
+    if (s[k]=="("){
+		intron = k;  
+      for(var m = k; m < s.length; m++){
+        if (s[m]==")"){
+			exon = m;  
+			aux = s.slice(intron+1,exon); }}}}
+					
+  if (intron!=-1){         
+   
+	   return [s.slice(0,intron).concat(aux[3].concat(s.slice(exon+1, s.length))), s.slice(0,intron).concat(s.slice(exon+1,s.length))  ]  ;}
+   else{
+	  return [s];}
+}
+
+
+
+var fix = function fx(l){
+ 
+ c = l[0][0]
+ aux = []
+ for(var n=0; n < l.length; n++){
+  if(l[n][0]==c){
+	  aux.push(l[n][1])}
+  else{
+	  return [aux].concat(fx(l.slice(n, l.length)))}} 
+ return [aux]
+ 
+}
+
+
+var fix2 = function fx2(l){
+ 
+ c = l[0][0]
+ aux = []
+ for(var n=0; n < l.length; n++){
+  if(l[n][0]==c){
+	  aux.push(l[n])}
+  else{
+	  return [aux].concat(fx2(l.slice(n, l.length)))}} 
+ return [aux]
+ 
+}
+
+function doublemap(f,l){ l.map(function(s){s.map(f)}) }
+
+
+var tensor = function ten(l){
+ if(l.length == 1){
+	 var a = []
+	 for(var n = 0; n< l[0].length; n++){
+	 a.push([l[0][n]]) }
+	 return a}
+	 	 
+ var aux = []
+ for(var n = 0; n<l[0].length; n++){
+    for(var m = 0; m < ten(l.slice(1,l.length)).length; m++){  
+		aux.push([l[0][n]].concat(ten(l.slice(1,l.length))[m] ))}}        
+		return aux}
+
+
+		function intersection(a,b){
+		 var val = []
+		 for(var n = 0; n < a.length; n++){
+		  if(arrayContains(b,a[n])){
+			  val.push(a[n])}}
+			  return val}
+			  
+
+			  function intersection3(a,b,c){
+				  return intersection(intersection(a,b),c)}
+
+				  function intersection4(a,b,c,d){
+					  return intersection(intersection3(a,b,c),d)}
+
+
+					  function listproj1(list, constraint1){
+						  var aux=[]
+						  for(var n = 0;n <list.length; n++){
+						  aux.push(list[n][sym[constraint1]])
+						  return aux }}
+	
+	
+
+						  function listproj2(list, constraint2){
+							  var aux=[]
+							  for(var n = 0;n <list.length; n++){
+							  aux.push([list[n][sym[constraint2[0]]], list[n][sym[constraint2[1]]]] )
+							  }
+							  
+							  return aux }
+	
+	
+
+							  function comp2(element, constraint2){
+								  return [element[sym[constraint2[0]]], element[sym[constraint2[1]]]]}
+
+        function prepverb(x){
+          
+          if(x.length >0){
+                                  
+							   for(var n=0; n < x.length; n++){
+								   if(x[n]=="|"){
+									   return [x.slice(0,n),x.slice(n+1,x.length)]} }
+            
+                                               }
+									return false}
+			  
+			  
+      
+function Word(data,lang) {
+									
+									   this.name = data
+									   this.lang = lang
+									   this.root = []
+									   this.morph= {}
+									   this.irreg = {}
+ 
+									   for(var c =0; c < categories.length; c++){
+										   this.morph[categories[c]] = "*"}
+ 
+				  this.flex = function(root,cat){
+									   if (this.morph[cat]!="*" && Object.keys(this.irreg).includes(root) && cat[sym[this.irreg[root][0]]] == this.irreg[root][1] )
+                                       {
+										   return this.irreg[root][2]} 
+									   else{
+									    if (this.morph[cat]!="*"){
+									     if (prepverb(root)!= false){
+                       
+											 return prepverb(root)[0].concat(this.morph[cat].concat("|".concat(prepverb(root)[1] ) ))}
+									     else{
+											 return root.concat(this.morph[cat])}}    
+									    else{
+											return "*"}
+								         }}
+										 
+										 
+										 
+										 this.flexcheck = function(string,root,cat){
+									   if(string == this.flex(root,cat)){
+										   return true}
+									   else{
+										   return false}}
+ 
+
+										   this.parse = function(s){
+									      val = []
+									      for(var l = 0; l <this.root.length; l++){
+									       for(var c = 0; c < categories.length; c++){
+									        if(sandhicomb(this.flex(this.root[l],categories[c])).includes(s) ){
+												val.push([this.name,this.root[l],categories[c]])}}}
+												return val }
+ 
+												this.parsecat = function(s){
+													aux = []
+													for(var n = 0; n < this.parse(s).length; n++)
+														{aux.push(this.parse(s)[n][2])}
+													return aux}
+
+
+
+						this.parsecheck = function(s){
+														
+							
+									   if(this.parse(s).length!=0){
+										   return true}
+									   else{
+										   return false}
+									   }
+
+
+										   this.permuparse = function(s,dictionary){
+									   return s}
+								   }
+
+										  
+
+										  
+										  
+										  
+
+										  function ASynt(data, language){
+											
+										    this.name =data
+										    this.language = language
+										    this.twolist = []
+										    this.constraint = []
+										    this.impose = []
+										    this.switch = "off"
+  
+ 
+											  this.impcheck = function(x){
+										    for(var i = 0; i < this.impose.length; i++){
+										      if (x[2][sym[this.impose[i][0]]] == this.impose[i][1]){
+												  return true}}
+												  return false}
+												  
+												  
+												  
+    this.parse = function(s){												  
+	while(s.includes(" ")){s = s.replace(" ","")}											  
+    
+   
+    var l = s.length
+    var val = [];
+    for(var n = 0; n < l; n++){ if(this.twolist[0].parsecheck(s.slice(0,n))
+     && this.twolist[1].parsecheck(s.slice(n,l))){val.push(n)}}		  
+        if (val.length > 0){
+       
+		    	
+			var m = val[0]
+			var v = this.twolist[0].parse(s.slice(0,m)).concat(this.twolist[1].parse(s.slice(m,l)))
+			 
+				
+		    if (this.constraint.length >0){
+				
+				
+			var con =  intersection(listproj2(this.twolist[0].parsecat(s.slice(0,m)), this.constraint),  listproj2(this.twolist[1].parsecat(s.slice(m,l)),this.constraint))
+				
+				
+				
+				
+			if (con.length > 0){
+			var aux = []
+			for(var a = 0; a < v.length; a++) 
+		    {
+				if(arrayContains(con, comp2(v[a][2], this.constraint)) ){aux.push(
+			v[a] )} }
+			
+			v = aux
+			  
+			}else{
+		  v = []}
+	  
+	  }
+		  
+		 if (this.impose.length >0 && v.length > 0){
+			 
+		 aux = []
+		for(a in v){if(this.impcheck(v[a] )){aux.push(v[a])}  }
+		 v = aux
+		 }
+		return v }
+		
+		
+		
+		return []}
+												  
+										this.parsecheck = function(s){
+										    var val = this.parse(s)
+										    if(val.length>0){
+												return true}
+										    else{
+												return false}
+												
+										}
+										
+										
+										this.parsecat = function(s){
+										    var val = []
+										    var list = this.parse(s)
+										    for(lex in list){
+												val.append(list[lex][2])}
+										    return val
+												
+												
+										}
+ 
+										this.parsefilter = function(s, con){
+										    return list(set(listproj2(this.parsecat(s),con)))}
+
+
+											this.permuparse = function(s,switchlist){
+										    s= s.replace(" ","")
+										    var l = len(s)
+										    var val= []
+												for(var n = 0; n < l; n++){if(this.twolist[0].parse(s.slice(0,n)) && this.twolist[1].parse(s.slice(n,l))){val.push(n)}}
+												
+										    if (val.length >0){
+										     var m = val[0]
+										     if (switchlist[this]==""){
+												 return this.twolist[0].permuparse(s.slice(0,m),switchlist)+" "+ self.twolist[1].permuparse(s.slice(m,l),switchlist)}
+										     else{
+										      return this.twolist[1].permuparse(s.slice(m,l),switchlist)+" "+ self.twolist[0].permuparse(s.slice(0,m),switchlist)
+										 }
+										} }
+									
+									}
+										  
+			
+
+function OSynt (dat, language){
+
+  this.name = dat
+  this.language = language
+  this.alter = []
+  this.impose =[]
+ 
+ 
+ 
+ 
+ this.impcheck = function(x){
+  for (i in this.impose){
+    if(x[2][sym[this.impose[i][0]]] == this.impose[i][1])
+     {return true}}
+  return false
+ }
+ 
+ 
+ 
+ this.parse = function(s){
+  var a =[]
+  if (this.alter[0].parsecheck(s) == true){ 
+   a = this.alter[0].parse(s)}
+  if (this.alter[1].parsecheck(s) == true){ 
+   a = this.alter[1].parse(s)}
+  var w = a
+ 
+  if (this.impose.length > 0 && a!=null && a.length > 0)
+  {
+  
+  var aux = []
+  for(y in a){if(this.impcheck(a[y])){aux.push(a[y])  }  }
+  
+   w = aux}
+  return w
+}
+
+ this.parsecheck = function(s){
+  if (this.parse(s).length >0){
+   return true}
+  else{
+   return false}
+}
+
+
+
+
+ this.parsecat = function(s){
+  var val = []
+  var list = this.parse(s)
+  for (lex in list){
+     val.push(list[lex][2])}
+  return val
+}
+
+ this.flex = function (root,cat){
+   if (this.alter[0].root.includes(root)){
+    return this.alter[0].flex(root,cat)}
+   if (this.alter[1].root.includes(root)){
+    return this.alter[1].flex(root,cat)}
+    }
+
+ this.permuparse = function (s,switchlist){
+  if (this.alter[0].parsecheck(s) == true){ 
+    return this.alter[0].permuparse(s,switchlist)}
+  if (this.alter[1].parsecheck(s) == true){ 
+   return this.alter[1].permuparse(s,switchlist) }
+   
+   }
+ 
+ this.parsefilter = function(s, con){
+  return Array.from( new Set(listproj2(this.parsecat(s),con)))
+
+
+}										  
+				}						  
+    
+    
+    
+function Dictionary(source,target){
+ 
+   this.source = source
+   this.target = target
+   this.dictionary = {}
+   this.word ={}
+   this.switchlist = {}
+var foo = this
+
+ this.pretrans = function(a){
+ 
+   return [foo.word[a[0]].name, foo.word[a[0]].flex( foo.dictionary[ [a[0], a[1] ] ], a[2] ), a[2] ] }
+ 
+this.trans1 = function(l){
+
+return this.source.parse(l).map(this.pretrans).filter(function(s){return s[1]!="*"})}
+  
+ this.trans2 = function(l){
+ 
+ return Array.from(new Set(tensor(fix(this.trans1(l))).map(function(x){return x.join(" ")} ) )  )
+ .map(function(x){return x.replace("  "," ")})}
+   
+this.trans = function(l){
+var aux = this.trans2(l)
+
+return aux.filter(function(s){return foo.target.parse(sandhi(s)).length > 0 && !s.includes("*")})
+.map(function(s){return sandhi(s)}).map(function(x){return x.replace(" -","-")}).map(function(x){return x.replace("|"," ")})}
+}
+
+function organize1(list,Keys){
+ col = {}
+ for (typ in Keys){
+  col[Keys[typ]] = []
+  for (lex in list){
+   if (list[lex][0] == Keys[typ]){
+    col[Keys[typ]].push(lex)}}}
+ return col
+}
+    
+   
+   
+   
+   Enoun = new Word("noun","English")
+                                 
+                                   Enoun.root = ["cat","mouse","book","table","dog","sausage","milk"]
+                                   Enoun.irreg = {}
+                                   Enoun.irreg["mouse"] = ["number","plu","mice"]
+
+                                   for(var c =0; c < Case.length; c++){
+                                      for(var g= 0; g < gender.length; g++){
+                                       Enoun.morph[["sing",gender[g],"3rd",Case[c]]] = ""
+                                          Enoun.morph[["plu", gender[g],"3rd",Case[c]]] = "s"            }}
+                                          
+                                          
+                                             
+   
+   
+Epronoun = new Word("pronoun","English")
+Epronoun.root = [""]
+for (g in gender){
+    Epronoun.morph[["sing",gender[g],"1st","subj"]] = "I"
+    Epronoun.morph[["sing",gender[g],"2nd","subj"]] = "you"
+    Epronoun.morph[["plu",gender[g],"1st","subj"]] = "we"
+    Epronoun.morph[["plu",gender[g],"2nd","subj"]] = "you"
+    Epronoun.morph[["plu",gender[g],"3rd","subj"]] = "they"}
+Epronoun.morph[["sing","masc","3rd","subj"]] = "he"      
+Epronoun.morph[["sing","fem","3rd","subj"]] = "she"
+Epronoun.morph[["sing","neut","3rd","subj"]] = "it"
+
+
+
+for (g in gender){
+    Epronoun.morph[["sing",gender[g],"1st","obj"]] = "me"
+    Epronoun.morph[["sing",gender[g],"2nd","obj"]] = "you"
+    Epronoun.morph[["plu",gender[g],"1st","obj"]] = "us"
+    Epronoun.morph[["plu",gender[g],"2nd","obj"]] = "you"
+    Epronoun.morph[["plu",gender[g],"3rd","obj"]] = "them"}
+
+Epronoun.morph[["sing","masc","3rd","obj"]] = "him"      
+Epronoun.morph[["sing","fem","3rd","obj"]] = "her"
+Epronoun.morph[["sing","neut","3rd","obj"]] = "it"
+
+
+
+for (g in gender){
+    Epronoun.morph[["sing",gender[g],"1st","gen"]] = "me"
+    Epronoun.morph[["sing",gender[g],"2nd","gen"]] = "you"
+    Epronoun.morph[["plu",gender[g],"1st","gen"]] = "us"
+    Epronoun.morph[["plu",gender[g],"2nd","gen"]] = "you"
+    Epronoun.morph[["plu",gender[g],"3rd","gen"]] = "them"}
+
+Epronoun.morph[["sing","masc","3rd","gen"]] = "him"      
+Epronoun.morph[["sing","fem","3rd","gen"]] = "her"
+Epronoun.morph[["sing","neut","3rd","gen"]] = "it"
+
+
+  
+Earticle = new Word("article","English")
+Earticle.root = ["the"]
+for (c in Case){
+   for (g in gender){
+     Earticle.morph[["sing",gender[g],"3rd",Case[c]]] =""
+     Earticle.morph[["plu",gender[g],"3rd",Case[c]]] = ""}}
+
+  
+EIarticle = new Word("indarticle","English")
+EIarticle.root = [""]
+for (c in Case){
+   for (g in gender){
+     EIarticle.morph[["sing",gender[g],"3rd",Case[c]]] ="a"
+     EIarticle.morph[["plu",gender[g],"3rd",Case[c]]] = "some"}}
+
+verb0 = new Word("verb0","English")
+verb0.root = ["run","eat","play","talk"]
+for (c in Case){
+   for (g in gender){
+     verb0.morph[["sing",gender[g],"1st",Case[c]]] =""
+     verb0.morph[["sing",gender[g],"2nd",Case[c]]] =""
+     verb0.morph[["sing",gender[g],"3rd",Case[c]]] ="s"
+     verb0.morph[["plu",gender[g],"1st",Case[c]]] =""
+     verb0.morph[["plu",gender[g],"2nd",Case[c]]] =""
+     verb0.morph[["plu",gender[g],"3rd",Case[c]]] =""}}
+
+verb1 = new Word("verb1","English")
+verb1.root = ["like","take","drop","love"]
+for (c in Case){
+   for (g in gender){
+     verb1.morph[["sing",gender[g],"1st",Case[c]]] =""
+     verb1.morph[["sing",gender[g],"2nd",Case[c]]] =""
+     verb1.morph[["sing",gender[g],"3rd",Case[c]]] ="s"
+     verb1.morph[["plu",gender[g],"1st",Case[c]]] =""
+     verb1.morph[["plu",gender[g],"2nd",Case[c]]] =""
+     verb1.morph[["plu",gender[g],"3rd",Case[c]]] =""}}
+
+Art = new OSynt("article","English")
+Art.alter =[Earticle,EIarticle]
+
+NounPhrase = new ASynt("noun phrase","English")
+NounPhrase.twolist = [Art, Enoun]
+NounPhrase.constraint = ["number","gender","person"]
+
+Subject = new OSynt("subject","English")
+Subject.alter = [Epronoun,NounPhrase]
+Subject.impose = [["case","subj"]]
+
+object = new OSynt("subject","English")
+object.alter = [Epronoun,NounPhrase]
+object.impose = [["case","obj"],["case","gen"]]
+
+S3 = new ASynt("S3","English")
+S3.twolist = [Subject,verb1]
+S3.constraint = ["number","person"]
+
+S2 = new ASynt("S2","English")
+S2.twolist = [S3,object]
+
+S1 = new ASynt("S1","English")
+S1.twolist = [Subject,verb0]
+S1.constraint = ["number","person"]
+
+Sen = new OSynt("sentence","English")
+Sen.alter = [S1,S2]
+
+
+Particle = new Word("Particle","Portuguese")
+Particle.root = [""]
+for (p in person){
+ for (c in Case){
+  Particle.morph[["sing","fem",person[p], Case[c]]] = "a"
+  Particle.morph[["sing","masc",person[p],Case[c]]] = "o"
+  Particle.morph[["plu","fem",person[p],Case[c]]] = "as"
+  Particle.morph[["plu","masc",person[p],Case[c]]] = "os"}}
+ 
+PIarticle = new Word("PIarticle","Portuguese")
+PIarticle.root = [""]
+for (p in person){
+ for (c in Case){
+  PIarticle.morph[["sing","fem",person[p], Case[c]]] = "uma"
+  PIarticle.morph[["sing","masc",person[p], Case[c]]] = "um"
+  PIarticle.morph[["plu","fem",person[p], Case[c]]] = "umas"
+  PIarticle.morph[["plu","masc",person[p], Case[c]]] = "uns"}}
+ 
+Ppronoun = new Word("Ppronoun","Portuguese")
+Ppronoun.root = [""]
+for (g in gender){
+    Ppronoun.morph[["sing",gender[g],"1st","subj"]] = "eu"
+    Ppronoun.morph[["sing",gender[g],"2nd","subj"]] = "tu"
+    Ppronoun.morph[["plu",gender[g],"1st","subj"]] = "nos"
+    Ppronoun.morph[["plu",gender[g],"2nd","subj"]] = "vos"}
+    
+Ppronoun.morph[["plu","masc","3rd","subj"]] = "eles"
+Ppronoun.morph[["plu","fem","3rd","subj"]] = "elas"
+Ppronoun.morph[["sing","masc","3rd","subj"]] = "ele"      
+Ppronoun.morph[["sing","fem","3rd","subj"]] = "ela"
+Ppronoun.morph[["sing","neut","3rd","subj"]] = "ele"
+
+
+for (g in gender){
+    Ppronoun.morph[["sing",gender[g],"1st","obj"]] = "-me"
+    Ppronoun.morph[["sing",gender[g],"2nd","obj"]] = "-te"
+    Ppronoun.morph[["plu",gender[g],"1st","obj"]] = "-nos"
+    Ppronoun.morph[["plu",gender[g],"2nd","obj"]] = "-vos"
+Ppronoun.morph[["plu","masc","3rd","obj"]] = "-(m3+n)os"
+Ppronoun.morph[["plu","fem","3rd","obj"]] = "-(m3+n)as"}
+
+Ppronoun.morph[["sing","masc","3rd","obj"]] = "-(m3+n)o"      
+Ppronoun.morph[["sing","fem","3rd","obj"]] = "-(m3+n)a"
+Ppronoun.morph[["sing","neut","3rd","obj"]] = "-(m3+n)o"  
+
+
+
+for (g in gender){
+    Ppronoun.morph[["sing",gender[g],"1st","gen"]] = "mim"
+    Ppronoun.morph[["sing",gender[g],"2nd","gen"]] = "ti"
+    Ppronoun.morph[["plu",gender[g],"1st","gen"]] = "nOs"
+    Ppronoun.morph[["plu",gender[g],"2nd","gen"]] = "vOs"
+Ppronoun.morph[["plu","masc","3rd","gen"]] = "eles"
+Ppronoun.morph[["plu","fem","3rd","gen"]] = "elas"
+
+Ppronoun.morph[["sing","masc","3rd","gen"]] = "ele"      
+Ppronoun.morph[["sing","fem","3rd","gen"]] = "ela"
+Ppronoun.morph[["sing","neut","3rd","gen"]] = "ele"  }
+
+
+
+Pfnoun = new Word("fem-noun","Portuguese")
+Pfnoun.root = ["mesa"]
+for (c in Case){
+    Pfnoun.morph[["sing","fem","3rd",Case[c]]] = ""
+    Pfnoun.morph[["plu", "fem","3rd",Case[c]]] = "s"}
+
+
+Pmnoun = new Word("masc-noun","Portuguese")
+Pmnoun.root = ["gato","rato","livro"]
+for (c in Case){
+    Pmnoun.morph[["sing","masc","3rd",Case[c]]] = ""
+    Pmnoun.morph[["plu", "masc","3rd",Case[c]]] = "s"}
+
+Pnoun = new OSynt("Pnoun","Portuguese")
+Pnoun.alter =[Pmnoun,Pfnoun]
+
+Averb0 = new Word("a-verb0","Portuguese")
+Averb0.root = ["cant"]
+for (c in Case){
+   for (g in gender){
+    Averb0.morph[["sing",gender[g],"1st",Case[c]]] ="o"
+    Averb0.morph[["sing",gender[g],"2nd",Case[c]]] ="as"
+    Averb0.morph[["sing",gender[g],"3rd",Case[c]]] ="a"
+    Averb0.morph[["plu",gender[g],"1st",Case[c]]] ="amos"
+    Averb0.morph[["plu",gender[g],"2nd",Case[c]]] ="ais"
+    Averb0.morph[["plu",gender[g],"3rd",Case[c]]] ="am"}}
+
+Everb0 = new Word("e-verb0","Portuguese")
+Everb0.root = ["corr"]
+for (c in Case){
+   for (g in gender){
+    Everb0.morph[["sing",gender[g],"1st",Case[c]]] ="o"
+    Everb0.morph[["sing",gender[g],"2nd",Case[c]]] ="es"
+    Everb0.morph[["sing",gender[g],"3rd",Case[c]]] ="e"
+    Everb0.morph[["plu",gender[g], "1st]",Case[c]]] ="emos"
+    Everb0.morph[["plu",gender[g],"2nd",Case[c]]] ="eis"
+    Everb0.morph[["plu",gender[g],"3rd",Case[c]]] ="em"}}
+
+
+Pverb0 = new OSynt("Pverb","Portuguese")
+Pverb0.alter = [Averb0,Everb0]
+
+
+
+Averb1 = new Word("a-verb1","Portuguese")
+Averb1.root = ["am","apanh"]
+for (c in Case){
+   for (g in gender){
+    Averb1.morph[["sing",gender[g],"1st",Case[c]]] ="o"
+    Averb1.morph[["sing",gender[g],"2nd",Case[c]]] ="as"
+    Averb1.morph[["sing",gender[g],"3rd",Case[c]]] ="a"
+    Averb1.morph[["plu",gender[g],"1st",Case[c]]] ="amos"
+    Averb1.morph[["plu",gender[g],"2nd",Case[c]]] ="ais"
+    Averb1.morph[["plu",gender[g],"3rd",Case[c]]] ="am"}}
+
+Everb1 = new Word("e-verb1","Portuguese")
+Everb1.root = ["quer","com"]
+for (c in Case){
+   for (g in gender){
+    Everb1.morph[["sing",gender[g],"1st",Case[c]]] ="o"
+    Everb1.morph[["sing",gender[g],"2nd",Case[c]]] ="es"
+    Everb1.morph[["sing",gender[g],"3rd",Case[c]]] ="e"
+    Everb1.morph[["plu",gender[g],"1st",Case[c]]] ="emos"
+    Everb1.morph[["plu",gender[g],"2nd",Case[c]]] ="eis"
+    Everb1.morph[["plu",gender[g],"3rd",Case[c]]] ="em"}}
+
+
+Pverb1 = new OSynt("Pverb1","Portuguese")
+Pverb1.alter = [Averb1,Everb1]
+Pverb1.root = Averb1.root + Everb1.root
+
+
+AIverb1 = new Word("ai-verb1","Portuguese")
+AIverb1.root = ["gost|de"]
+for (c in Case){
+   for (g in gender){
+    AIverb1.morph[["sing",gender[g],"1st",Case[c]]] ="o"
+    AIverb1.morph[["sing",gender[g],"2nd",Case[c]]] ="as"
+    AIverb1.morph[["sing",gender[g],"3rd",Case[c]]] ="a"
+    AIverb1.morph[["plu",gender[g],"1st",Case[c]]] ="amos"
+    AIverb1.morph[["plu",gender[g],"2nd",Case[c]]] ="ais"
+    AIverb1.morph[["plu",gender[g],"3rd",Case[c]]] ="am"}}
+
+EIverb1 = new Word("ei-verb1","Portuguese")
+EIverb1.root = ["mex|em"]
+for (c in Case){
+   for (g in gender){
+    EIverb1.morph[["sing",gender[g],"1st",Case[c]]] ="o"
+    EIverb1.morph[["sing",gender[g],"2nd",Case[c]]] ="es"
+    EIverb1.morph[["sing",gender[g],"3rd",Case[c]]] ="e"
+    EIverb1.morph[["plu",gender[g],"1st",Case[c]]] ="emos"
+    EIverb1.morph[["plu",gender[g],"2nd",Case[c]]] ="eis"
+    EIverb1.morph[["plu",gender[g],"3rd",Case[c]]] ="em"}}
+
+
+PIverb1 = new OSynt("PIverb1","Portuguese")
+PIverb1.alter = [AIverb1,EIverb1]
+PIverb1.root = AIverb1.root.concat(EIverb1.root)
+
+
+All1 = new OSynt("all1","Portugese")
+All1.alter = [Pverb1,PIverb1]
+All1.root = Pverb1.root.concat(PIverb1.root)
+
+
+
+PArt = new OSynt("Particle","Portuguese")
+PArt.alter =[Particle,PIarticle]
+
+PNounPhrase = new ASynt("Pnoun phrase","Portuguese")
+PNounPhrase.twolist = [PArt, Pnoun]
+PNounPhrase.constraint = ["number","gender","person"]
+
+PSubject = new OSynt("Psubject","Portuguese")
+PSubject.alter = [Ppronoun,PNounPhrase]
+PSubject.impose = [["case","subj"]]
+
+Pobject = new OSynt("Pobject","Portuguese")
+Pobject.alter = [Ppronoun,PNounPhrase]
+Pobject.impose = [["case","obj"]]
+
+
+PIobject = new OSynt("PIobject","Portuguese")
+PIobject.alter = [Ppronoun,PNounPhrase]
+PIobject.impose = [["case","gen"]]
+
+
+PS3 = new ASynt("PS3","Portuguese")
+PS3.twolist = [PSubject,Pverb1]
+PS3.constraint = ["number","person"]
+
+
+PS3I = new ASynt("PS3I","Portuguese")
+PS3I.twolist = [PSubject,PIverb1]
+PS3I.constraint = ["number","person"]
+
+
+
+PS2D = new ASynt("PS2D","Portuguese")
+PS2D.twolist = [PS3,Pobject]
+
+
+PS2I = new ASynt("PS2I","Portuguese")
+PS2I.twolist = [PS3I,PIobject]
+
+
+
+PS2 = new OSynt("PS2","Portuguese")
+PS2.alter = [PS2D,PS2I]
+
+PS1 = new ASynt("PS1","Portuguese")
+PS1.twolist = [PSubject,Pverb0]
+PS1.constraint = ["number","person"]
+
+PSen = new OSynt("Psentence","Portuguese")
+PSen.alter = [PS1,PS2]
+
+
+Dic = new Dictionary(Sen, PSen)
+Dic.dictionary = {"noun,cat":"gato", "noun,table":"mesa", "article,the":"", 
+"indarticle, ":"", "pronoun,":"" ,"verb1,love":"am","verb1,like":"gost|de","verb0,run":"corr"}
+
+Dic.word = {"noun":Pnoun, "pronoun":Ppronoun, "article":Particle, "indarticle": PIarticle, "verb0": Pverb0, "verb1": All1}
+
+   
+   </script>
+            						   
+</html>

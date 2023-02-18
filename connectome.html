@@ -1,0 +1,17 @@
+<html>
+  <script>
+  var neuron1 = new Worker('neuron1.js', {'name' : 'neuron1'});
+  var neuron2 = new Worker('neuron2.js', {
+    'name' : 'neuron2'})
+
+  neuron1.addEventListener('message', function(e) {
+   if(e.data[1]=="neuron2"){neuron2.postMessage(["neuron1","neuron2"])}}, false );
+
+  neuron2.addEventListener('message', function(e) {
+  if(e.data[1]=="neuron1"){
+  neuron1.postMessage(["neuron2","neuron1"])} }, false);
+  
+// Start things up
+  //neuron1.postMessage(["neuron2","neuron1"])
+  </script>
+  </html>
