@@ -1,0 +1,3 @@
+A(x) = (B(x) and C(x));
+B(x) = (D(x) and E(x));
+C(x) = exists w. F(x,w);

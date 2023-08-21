@@ -1,0 +1,991 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+    </head>
+    
+    <br>
+    
+    
+    
+    <textarea name="textarea" id = "output" style="width:800px;height:400px;"></textarea>
+    <br>
+    
+    <br>
+    <input type="text" id="input" style="width:800px;" value="((exists x. A(x) and exists x. (B(x,y) and C(y))) and D(x) and exists y. A(x,y))"/>
+    <br><br>
+    
+    <input type ="button" id="enter" value="Check Syntax" onclick= "doo()"/><input type ="button" id="button2" value="Clear" onclick= "doo2()"/><input type ="button" id="button3" value="Free Variables" onclick= "doo3()"/><input type ="button" id="button4" value="Bound Variables" onclick= "doo4()"/><input type ="button" id="button5" value="Rename Bound Variables" onclick= "doo5()"/><input type ="button" id="subs" value="Variable Substitution" onclick= "sub()"/><input type ="button" id="addf" value="Resolve Formula" onclick= "resolv()"/><br><input type ="button" id="button6" value="Prenex Form" onclick= "pre()"/><input type ="button" id="button6" value="Expand Definition" onclick= "doo7()"/><input type ="button" id="button6" value="Join" onclick= "join()"/><input type ="button" id="button6" value="Show Definitions" onclick= "doo6()"/><input type ="button" id="button6" value="Show Facts/Axioms" onclick= "doo9()"/><input type ="button" id="button6" value="Quantifier Introduction" onclick= "doo8()"/><input type ="button" id="addd" value="Resolve Facts/Axioms" onclick= "unif()"/><br><input type ="button" id="query" value="Query" onclick= "query()"/><input type ="button" id="conv" value="Conversation" onclick= "conv()"/><input type ="button" id="adddef" value="Add Definition" onclick= "adddef()"/><input type ="button" id="addfact" value="Add Fact/Axiom" onclick= "addfact()"/><br><br>
+    Load Definition File:
+        <input type="file" id="your-files" multiple><br>
+            Load Fact/Axiom File:
+            <input type="file" id="your-files2" multiple>
+
+
+
+<script>
+  
+  function addconstant(string){
+      for(var i = 0; i< string.length; i++){
+          
+          if(!["(",")",".","=",";","and","exists"].includes(string[i]) && !constants.includes(string[i])&& string[i][0]!=string[i][0].toUpperCase())
+          {constants.push(string[i]);  }
+      }
+      
+      
+  }
+
+function addpredicate(string){
+    for(var i = 0; i< string.length; i++){
+        
+        if(!["(",")",".","=",";","and","exists"].includes(string[i]) && !predicates.includes(string[i])&& string[i][0]==string[i][0].toUpperCase())
+        {predicates.push(string[i]);  }
+    }
+    
+    
+}
+
+
+//((exists x. A(x) and exists x. (B(x,y) and C(y))) and D(x) and exists y. A(x,y))
+    var system = [];
+    
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        var contents = event.target.result;
+        contents = rectify3(contents);
+        addconstant(norm(contents));
+        addpredicate(norm(contents));
+        var system1 = contents.split(";");
+        system1.pop();
+     
+        var q = [];
+        for(var i = 0; i< system1.length;i++){
+            q.push(equationsplit(system1[i]));}
+       
+        //also must add new symbols. Check if not circular and identify primitive predicates
+        system = q;};
+
+reader.onerror = function(event) {
+    console.error("File could not be read! Code " + event.target.error.code);
+};
+
+function adddef(){
+    var input = rectify3(document.getElementById("input").value);
+    
+    addconstant(norm(input));
+    addpredicate(norm(input));
+    
+    system.push(equationsplit(input));
+    out("\nOk.\n");
+    
+}
+
+var control = document.getElementById("your-files");
+control.addEventListener("change", function(event) {
+                         
+                         // When the control has changed, there are new files
+                                                  var i = 0,
+                         files = control.files,
+                         len = files.length;
+                         
+                         for (; i < len; i++) {
+                         console.log("Filename: " + files[i].name);
+                         console.log("Type: " + files[i].type);
+                         console.log("Size: " + files[i].size + " bytes");
+                         reader.readAsText(files[i]) ;                                 }
+                         
+                         }, false);
+                         
+                         var facts = [];
+                         
+                         var reader2 = new FileReader();
+                         reader2.onload = function(event) {
+                             var contents = event.target.result;
+                             contents = rectify3(contents);
+                             addconstant(norm(contents));
+                             addpredicate(norm(contents));
+                             var system1 = contents.split(";");
+                             system1;
+                             
+                             var q = [];
+                             for(var i = 0; i< system1.length;i++){q.push(norm(system1[i]));}
+                             
+                             facts = q;;
+                             
+                         };
+
+
+function addfact(){
+    var input = norm(document.getElementById("input").value);
+    
+    addconstant(input);
+    addpredicate(input);
+    facts.push(input);
+    out("\nOk.\n");
+    
+}
+
+reader2.onerror = function(event) {
+    console.error("File could not be read! Code " + event.target.error.code);
+};
+var control2 = document.getElementById("your-files2");
+control2.addEventListener("change", function(event) {
+                         
+                         // When the control has changed, there are new files
+                         
+                        var i = 0,
+                         files = control2.files,
+                         len = files.length;
+                         
+                         for (; i < len; i++) {
+                         console.log("Filename: " + files[i].name);
+                         console.log("Type: " + files[i].type);
+                         console.log("Size: " + files[i].size + " bytes");
+                         reader2.readAsText(files[i]) ;                                 }
+                         
+                         }, false);
+
+    output = ""
+   
+   function join(){
+       
+       
+           var num = (rectify2(window.prompt("Choose Fact/axioms: "))).split(",");
+           var q = [];
+           for(var i = 0; i< num.length; i++){q.push(Number(num[i])-1);  }
+           var jo = ["("].concat(facts[q[0]]);
+           for(var i = 1; i< num.length; i++){jo = jo.concat(["and"]).concat(facts[q[i]]);   }
+           jo = jo.concat([")"]);
+           
+         //  console.log(jo.join(" "));
+            //  var num2 = window.prompt("Choose second fact/axiom: ");
+          // var str = ["("].concat(facts[num1-1]).concat(["and"]).concat(facts[num2-1]).concat([")"]);
+           
+           out("\n"+nice(trim(prenex(jo)).join(" "))+"\n");
+       
+   }
+
+function unifyfacts(){
+    
+   
+    var jo = ["("].concat(facts[0]);
+    for(var i = 1; i< facts.length; i++){jo = jo.concat(["and"]).concat(facts[i]);   }
+    jo = jo.concat([")"]);
+    jo = resolve(jo);
+    jo = alpha(jo,freevariablelist2(jo).concat(boundvariablelist2(jo)));
+    return jo;
+    
+}
+
+    
+    function sub(){
+        var vari = window.prompt("Choose variable: ");
+        var exp = window.prompt("Choose new variable or constant: ");
+        var str = norm(document.getElementById("input").value);
+        console.log(vari,exp);
+       
+        out("\n"+substitute(str,vari,exp).join(" ")+"\n");
+        
+    }
+  
+  
+
+function equationsplit(string){
+    for(var i = 1; i< string.length-1;i++){
+        if(string[i] =="="){return [norm(string.slice(0,i-1)),norm(string.slice(i+1,string.length))  ];}
+        
+    }
+    return 0;
+}
+
+
+function alphasame(string1,string2){
+    var special = variablelist2(string1).concat(variablelist2(string2)) ;
+    string1 = alpha(string1, special);
+    string2 = alpha(string2,special);
+    if(string1.join(" ")==string2.join(" ")){return true;}else{return false;}}
+
+function atomiclist(string){
+    q= [];
+    for(var i = 0; i<string.length-2;i++){
+        for(var j = i+1; j< string.length+1; j++){
+            if(parseatomic(string.slice(i,j))){q.push(string.slice(i,j)); break; }}}return q;}
+
+var power = function pow(list){
+    var q = [];
+    if(list.length ==1){return [[],list]}
+    if(list.length>0){
+    var aux = pow(list.slice(1,list.length));
+    q = q.concat(aux);
+    for(var i = 0; i< aux.length; i++){
+        q = q.concat([[list[0]].concat(aux[i])] );}}return q;}
+
+var permutation = function permu(list){
+    if(list.length == 1){return [list];}
+    var q = [];
+    for(var i = 0; i < list.length; i++){
+         var list2 = [].concat(list);
+         list2.splice(i,1);
+        var aux = permu(list2);
+        for( var j = 0; j< aux.length; j++){q.push([list[i]].concat(aux[j]));}}return q;}
+
+
+function fullmatch(string){
+    var aux = power(string);
+    var q = [];
+    for(var i = 0; i< aux.length; i++){
+        q = q.concat(permutation(aux[i]));}return q;}
+
+
+function adequate(string1, string2){
+    for(var i = 0; i< string1.length; i++){
+        if(string1[i][0]!=string2[i][0]){return false;   }}return true;}
+
+
+function compare(string1,string2){
+
+    //string2 follows from string1 ? entailment and entropy
+    for(var i = 2; i< string1.length-1; i++){
+        if(constants.includes(string1[i]) && constants.includes(string2[i]) && string1[i]!=string2[i]){return false;}
+        if(!constants.includes(string1[i]) &&constants.includes(string2[i]) ){return false;}
+        for(var j = i+1; j< string1.length;j++){
+            if(string1[i]!=string1[j]&& string2[i]==string2[j]){return false;}} } return true;}
+
+
+function entailcheck(list1,list2){
+    if(list1.length!=list2.length){return false;}
+    if(!adequate(list1,list2)){return false;}
+   // var aux1 = list1.join("");
+   // var aux2 = list2.join("");
+   var aux1 = restore(list1);
+   var aux2 = restore(list2);
+    for(var i =0; i< list1.length; i++ ){
+        if(!compare(aux1,aux2)){return false;}
+    }
+    return true;
+}
+
+function restore(string){var q = []; for(var i = 0; i<string.length;i++){q = q.concat(string[i]);  }return q; }
+
+function entailmaster(string1,string2){
+   
+    var aux = resolve(string2, freevariablelist2(string2));
+    var aux1 = string1;
+    var aux2 = prenex(alpha(aux,allvar(aux)));
+    var aux3 = atomiclist(aux1);
+    var aux4 = atomiclist(aux2);
+  //  console.log(aux3.join(" ")," - ",aux4.join(" "));
+    var aux5 = fullmatch(aux3);
+   // console.log(aux5.join("*"));
+    for(var i = 0; i < aux5.length; i++){
+        if(entailcheck(aux5[i],aux4)){return true;}
+        
+        
+    }
+ 
+ return false;
+}
+
+function doublecheck(string){
+    var aux = atomiclist(string);
+    for(var i = 0; i< aux.length; i++){
+        var aux2 = aux[i];
+        var aux3 = restore(aux.slice(0,i).concat(aux.slice(i+1,aux.length )));
+        if(entailmaster(aux3,aux2)){return aux3;}
+        
+    }
+           return string;
+}
+
+function removespurious(string){
+    while(string!=doublecheck(string)){string = doublecheck(string);}
+    return string;
+}
+
+function fix(string){
+    var sep = existscomponent(string);
+    return string.slice(0,sep).concat(removespurious(string));
+    
+    
+}
+
+function containedin(a,b){for(var i = 0; i<a.length;i++){if(!b.includes(a[i]) ){return false;} }return true;}
+
+function rectify(s){
+    while(s.includes("  ")){
+        s = s.replace("  "," ");}
+    if(s[0]==" "){s = s.slice(1,s.length);}
+    if(s[s.length-1]==" "){s = s.slice(0,s.length-1);}
+    return s;}
+
+function rectify2(s){
+    while(s.includes(" ")){
+        s = s.replace(" ","");}return s;}
+
+function rectify3(s){
+    while(s.includes("\n")){
+        s = s.replace("\n","");}return s;}
+    
+    
+    function doo(){
+         var input = norm(document.getElementById("input").value);
+         if(formula(norm(document.getElementById("input").value))==true){out("\nThe Syntax of\n\n" + nice(input.join(" "))+ "\n\nis Correct.\n");return}else{out("\n\nSyntax Error.\n");}}
+
+  out("\nJS-ALPHA Knowledge Representation And Reasoning\nThe Existential and Conjunctive Fragment of FOL\n\n(c) 2018 Clarence Protin v.0.1\n")
+
+function out(s){
+    output = output + s;
+    document.getElementById("output").value = output;
+}
+
+function pre(){
+ var input = norm(document.getElementById("input").value);
+// console.log(input);
+// console.log( freevariablelist2(input).concat(boundvariablelist2(input)  ).join(" ") );
+
+
+// input = alpha(input,freevariablelist2(input).concat(boundvariablelist2(input)));
+
+
+//console.log(allvar(input));
+input = alpha(input, allvar(input));
+
+
+//console.log("check2");
+ //console.log(input.join(" "));
+ out("\nPrenex Form is:\n\n" + nice(prenex(input).join(" "))+"\n");
+}
+
+function resolv(){
+    var input = norm(document.getElementById("input").value);
+    input = resolve(input,freevariablelist2(input));
+     input = prenex(alpha(input,freevariablelist2(input).concat(boundvariablelist2(input))));
+     out("\nResolution is:\n\n" + nice(input.join(" "))+"\n");
+}
+
+
+
+function unif(){
+    var aux =prenex(unifyfacts() )  ;
+    out("\nUnification is:\n\n" + nice(trim(aux).join(" "))+"\n");
+    
+}
+
+function query(){
+     var input = fix(norm(document.getElementById("input").value));
+     if(entailmaster(unifyfacts(),input)){out("\nYes.\n");}else{out("\nI do not know.\n");}
+    
+}
+
+function conv(){
+      var input = norm(document.getElementById("input").value);
+      var aux = conversationatomic(input);
+      
+    
+    
+}
+
+function doo2(){
+    output ="";
+    document.getElementById("output").value = "";
+    
+}
+
+function doo3(){
+     var input = norm(document.getElementById("input").value);
+     out("\nFree Variables: "+ freevariablelist2(input).join(" , ") +"\n");
+}
+
+
+function doo4(){
+    var input = norm(document.getElementById("input").value);
+    out("\nBound Variables: "+ boundvariablelist2(input).join(" , ") +"\n");
+}
+
+
+function doo5(){
+    var input = norm(document.getElementById("input").value);
+    out("\n" + alpha(input,freevariablelist2(input)).join(" ")+ "\n");
+}
+
+
+
+function getdefinition(predicateletter){
+    for(var i = 0; i< system.length; i++){
+        if(system[i][0][0]==predicateletter){return [system[i][0] ,system[i][1]];}
+        
+        
+    }
+    
+    return [];
+}
+
+
+function nice(string){
+
+for(var i = 0; i<string.length;i++){
+    string = string.replace(" )",")");
+    string = string.replace("( ","(");
+    string = string.replace(" (","(");
+    string = string.replace(" , ",",");
+    
+}
+
+return string;
+}
+
+
+function doo6(){
+    out("\nDefinitions:\n\n");
+    for(var i = 0; i< system.length; i++){
+    out(system[i][0].join("")+" = "+ nice(system[i][1].join(" ")) +"\n");}
+    
+
+}
+
+
+
+function doo7(){
+    var pred = window.prompt("Choose Predicate Symbol: ");
+    var def = getdefinition(pred);
+    var str = norm(document.getElementById("input").value);
+    
+    
+    out("\n"+nice(definitionexpansion(str, def[0],def[1]).join(" "))+"\n");
+    
+    
+    
+}
+
+function doo8(){
+    var con = window.prompt("Choose Position(s) of Constant: ");
+    con = rectify2(con).split(",");
+    var str = norm(document.getElementById("input").value);
+    var n = newvar(variablelist2(str));
+    for(var i = 0; i< con.length;i++)
+    {str[con[i]]= n};
+    
+    out("\n"+nice( ["exists",n,"."].concat(str).join(" ") )+"\n");
+    
+    
+    
+}
+function doo9(){
+    out("\nAxioms and Facts:\n\n");
+    for(var i = 0; i< facts.length; i++){
+        out((i+1).toString() + ". "+ nice(facts[i].join(" ")) +"\n");}
+    
+    
+}
+
+
+    var predicates = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O", "P","Q","R","S","T","U","V","W","X","Y","Z"]
+    var variables = ["x","y","z","u","v","w","s","t"]
+    var constants = ["a","b","c","d","e","f"]
+ 
+    for(var i = 0;i<100;i++){
+        variables.push("x_"+ i.toString());
+        constants.push("c_"+ i.toString());
+       predicates.push("P_"+ i.toString());    }
+
+function newvar(list){
+    for(var i = 0;i<100;i++){
+        if(!list.includes("x_"+ i.toString())){
+            return "x_"+ i.toString();
+        }
+    }
+}
+
+    var longbody = function bd(string){
+        if(string.length == 0){return true;}
+        if(string.length > 1 && (constants.includes(string[1]) || variables.includes(string[1]))
+          && string[0] == "," && bd(string.slice(2,string.length)        )   ){return true;}
+       
+        
+              return false;
+    }
+
+function body(string){
+    if((constants.includes(string[0]) || variables.includes(string[0])) && longbody(string.slice(1,string.length))  ){return true;}
+    
+    return false;
+}
+              
+              
+              
+    function parseatomic(string){
+              if(string.length > 2 && predicates.includes(string[0])&& string[1] =="("&&string[string.length-1]==")" && body(string.slice(2,string.length-1))){return true;}
+        
+              return false;
+    }
+
+var existsparse = function ex(string){
+    if(string.length ==0){return false};
+ if(string.length == 3 & string[0]=="exists" && variables.includes(string[1])&& string[2]=="."){return true;}
+
+     if(string[0]=="exists" && variables.includes(string[1])&& string[2]=="."&& ex(string.slice(3,string.length))){return true;}
+return false;}
+
+
+    
+    
+    
+    
+    var formula = function fr(string){
+      //  console.log("parse called");
+        
+        if(parseatomic(string)){return true;}
+        
+        for(var i = 0; i< string.length; i++){
+            
+            if( existsparse(string.slice(0,i)) ){return  fr(string.slice(i,string.length));}        }
+        
+        for(var i = 0; i< string.length-5; i++){
+            
+            if( fr(string.slice(1,i)) && string[i]=="and" && string[0]=="(" && string[string.length-1] ==")"  ){return      ( fr(string.slice(i+1,string.length-1))||
+                                                                                                                             fr(["("].concat(string.slice(i+1, string.length-1)).concat([")"])));}
+        }return false}
+
+
+
+
+
+function variablelist(string){
+    q = [];
+    for(var i = 1; i< string.length; i++){
+        if(variables.includes(string[i]) && string[i-1]!="exists"){q.push([string[i],i]);}
+        
+    }
+    return q.join(" ");
+}
+
+
+
+function variablelist2(string){
+    q = [];
+    for(var i = 1; i< string.length; i++){
+        if(variables.includes(string[i])){q.push(string[i]);}
+        
+    }
+    return q;
+}
+
+
+
+function scope(string,i){
+    for(var k = i; k< string.length+1;k++){
+        if(formula(string.slice(i,k))){return k;}
+        
+        
+    }
+    return -1;
+}
+
+
+function boundcheck(string,i){
+    if(variables.includes(string[i])&& string[i-1]!="exists" )
+    for(var j = 0; j< i-2; j++)
+    {
+        if(existsparse(string.slice(j,j+3) )&& string[j+1]==string[i]&& i<scope(string,j) ){ return true;}
+            }return false;}
+
+
+function boundfind(string,i){
+  //  console.log("bound find called ", i);
+    if(variables.includes(string[i])&&string[i-1]!="exists")
+    for(var j = 3; j< i+1; j++)
+    {
+        if(existsparse(string.slice(i-j,i-j+3) )&& string[i-j+1]==string[i] && i< scope(string,i-j) ){return (i-j); }
+        
+        
+    }
+    
+    
+    return -1;
+    
+}
+
+
+function boundvariablelist(string){
+    var q = [];
+    for(var i = 0; i< string.length; i++){
+     
+     if(boundcheck(string,i)){q.push([string[i],i]);}
+     
+        }
+    
+    
+    
+     return q;}
+
+
+
+function freevariablelist(string){
+    var q = [];
+    for(var i = 1; i< string.length; i++){
+        
+        if(variables.includes(string[i]) &&  string[i-1]!="exists"  && !boundcheck(string,i)){q.push([string[i],i]);}
+        
+    }
+    
+    
+    return q;}
+
+function freevariablelist2(string){
+    var q = [];
+    var aux = freevariablelist(string);
+    for(var i = 0; i < aux.length; i++){
+        if(!q.includes(aux[i][0])){q.push(aux[i][0]);}
+        
+        
+    }
+   
+   return q;
+}
+
+
+function allvar(string){
+    var q =[];
+    for (var i = 0; i< string.length; i++){if(variables.includes(string[i])&& !q.includes(string[i])  ){q.push(string[i]);} }
+    return q;
+    
+}
+
+
+function symblist(string){
+    var q = [];
+    for(var i = 1; i< string.length; i++){
+        
+        if((variables.includes(string[i]) || constants.includes(string[i])) &&  string[i-1]!="exists"  && !boundcheck(string,i)){q.push([string[i],i]);}
+        
+    }
+    
+    
+    
+    return q;}
+
+
+
+function symblist2(string){
+    var q = [];
+    var aux = symblist(string);
+    for(var i = 0; i < aux.length; i++){
+        if(!q.includes(aux[i][0])){q.push(aux[i][0]);}}return q;}
+
+
+
+
+function boundvariablelist2(string){
+    var q = [];
+    var aux = boundvariablelist(string);
+    for(var i = 0; i < aux.length; i++){
+        if(!q.includes(aux[i][0])){q.push(aux[i][0]);}
+        
+        
+    }
+    
+    return q;
+}
+
+
+
+
+function alpha(string,list){
+    var q = [].concat(list);
+    var newstring = [].concat(string);
+    
+    for(var i = 0; i<string.length-6; i++){
+        
+        
+        if(string[i]=="exists" && list.includes(string[i+1]) ){
+            
+           
+            var n = newvar(q);
+            q.push(n);
+            
+    for(var j = i; j<string.length-1;j++)
+    {
+       
+    if(boundfind(string,j)==i){
+     
+                    newstring[j] = n;
+                    
+                  //  console.log("*");
+                }
+        newstring[i+1]= n; }}}
+    
+    return newstring;
+}
+    
+    
+    function existscomponent(string){
+        var q = [];
+        for(var i = 0;i< string.length;i++){
+            if(existsparse(string.slice(0,i)) ){q.push(i);}
+            
+            
+        }
+        if(q.length>0){
+        return q[q.length-1];}else{return 0;}
+    }
+    
+    
+   var prenex =  function pn(string){
+       
+     //  console.log("Boo");
+       if(parseatomic(string)){return string;}
+    
+       if(string[0]=="exists" ){
+          
+          
+          var aux = [].concat(string.slice(3, string.length));
+          var aux3 = pn(aux);
+          var aux2 = [].concat(string.slice(0,3));
+       //   console.log(aux3.join(" "));
+                       return aux2.concat(aux3);
+                    
+           
+       }
+       
+        for(var i = 0; i< string.length; i++){
+            
+            if( formula(string.slice(1,i)) && string[i]=="and" &&( formula(string.slice(i+1,string.length-1))||
+                                                             formula(["("].concat(string.slice(i+1, string.length-1)).concat([")"]))) && string[0]=="(" && string[string.length-1] ==")" )
+                                                             
+                                                             
+         {//var f1 = variablelist2(string.slice(1,i));
+        //var f2 = variablelist2(string.slice(i+1, string.length-1));
+        //var g1 = boundvariablelist2(string.slice(1,i));
+        //var g2 = variablelist2(string.slice(i+1, string.length-1));
+        var left = [].concat(pn(string.slice(1,i)));
+        
+            var right =[].concat(pn(string.slice(i+1, string.length-1)));
+            var g2 = boundvariablelist2(right);
+          
+        
+     //   var left2 = alpha(left,g2);
+//        left2 = alpha(left2,freevariablelist2(string.slice(1,i)));
+  //      console.log(f2,left2);
+       //var left2 = alpha(left2,g2);
+    //var right2 = alpha(right,f1);
+    //var right2 = alpha(right2,g1);
+      var right2 = right;
+      var left2 = left;
+        var x = left2.slice(0, existscomponent(left2));
+        var y = right2.slice(0, existscomponent(right2));
+        
+        var left3 = left2.slice(existscomponent(left2), left2.length);
+        var right3 = right2.slice(existscomponent(right2), right2.length);
+        
+        
+        return x.concat(y).concat(left3).concat(["and"]).concat(right3);
+        
+             }
+         
+         if( formula(string.slice(0,i)) && string[i]=="and" &&( formula(string.slice(i+1,string.length))||
+                                                               formula(["("].concat(string.slice(i+1, string.length)).concat([")"]) ) ))
+                                                               
+                                                               
+                                                               {//var f1 = variablelist2(string.slice(0,i));
+                                                                  // var f2 = variablelist2(string.slice(i+1, string.length));
+                                                                   //var g1 = boundvariablelist2(string.slice(0,i));
+                                                                   //var g2 = variablelist2(string.slice(i+1, string.length));
+                                                                   var left = [].concat(pn(string.slice(0,i)));
+                                                                   
+                                                                   var right =[].concat(pn(string.slice(i+1, string.length)));
+                                                                    var g2 = boundvariablelist2(right);                                                                   //var left2 = alpha(left, g2);
+                                                               //    left2 = alpha(left2,freevariablelist2(string.slice(0,i)));
+                                                                //   console.log(f2,left2);
+                                                                 //  var left2 = alpha(left,f2);
+                                                                //   var left2 = alpha(left,g2);
+                                                                 //  var right2 = alpha(right,f1);
+                                                                 //  var right2 = alpha(right,g1);
+                                                                   var right2 = right;
+                                                                   var left2 = left;
+                                                                   var x = left2.slice(0, existscomponent(left2));
+                                                                   var y = right2.slice(0, existscomponent(right2));
+                                                                   
+                                                                   var left3 = left2.slice(existscomponent(left2), left2.length);
+                                                                   var right3 = right2.slice(existscomponent(right2), right2.length);
+                                                                   
+                                                                   
+                                                                   return x.concat(y).concat(left3).concat(["and"]).concat(right3);
+                                                                   
+                                                               }}return string;
+    }
+
+
+function substitute(strin, variable, exp){
+    var string = [].concat(strin);
+    for(var i = 1; i< string.length;i++){
+        if(string[i]==variable && (!boundcheck(string,i) || constants.includes(string[i]) ) && string[i-1]!="exists"){
+        
+            string[i]= exp;}}
+    return string;
+}
+
+
+function multisub(string, variablelist, explist){
+    
+    var q = [];
+    for(var i = 0; i < variablelist.length;i++ ){
+        q = [].concat(substitute(string, variablelist[i], explist[i]));
+        
+        
+        
+    }
+    
+    return q;
+}
+
+
+function getpredicate(string,i){
+    
+    for(var j = i; j <string.length+1; j++){
+        
+        if(parseatomic(string.slice(i,j))){return j;}
+    }
+    
+    return 0;
+}
+
+
+function definitionexpansion(string, predicate, newexp){
+    var q = [];
+    
+   
+
+    q = q.concat(string);
+  //   q = alpha(string, freevariablelist2(newexp));
+     var aux1 = freevariablelist2(predicate);
+     
+     for(var j = 0; j< string.length; j++){
+        
+    for(var i =0; i< q.length; i++){
+        if( q[i]==predicate[0] ){
+           
+            var k = getpredicate(q,i);
+           
+            var aux2 = symblist2(q.slice(i,k));
+           
+            var a = q.slice(0,i).concat(multisub(newexp,aux1,aux2)).concat(q.slice(k, q.length) );var q = [].concat(a);  break  }
+ //       out("\n"+nice(multisub(newexp,aux1,aux2).join(" "))+"\n")
+        
+    }
+    }
+    return q;
+}
+
+
+function resolve1(string){
+    
+    q = [].concat(string);
+    for(var i = 0; i< system.length; i++){
+        q = definitionexpansion(q, system[i][0], system[i][1]);}return q;}
+
+
+function resolve(string){
+    while(string.join(" ")!= resolve1(string).join(" ")){string = resolve1(string);  }
+    return string;}
+
+
+function conversationatomic(string){
+    for(var i = 0; i< system.length; i++){
+        var free = freevariablelist2(system[i][0]);
+        var dat = symblist2(string);
+        var aux = atomiclist(system[i][1]);
+        for(var j = 0; j < aux.length;j++){if(aux[j]==string[0] ){out("\n"+ (multisub(system[i][0],free  ,dat  )).join(" ")+" ? \n" );}  }
+        if(system[i][0][0]==string[0]){out("\n ? "+ (multisub(system[i][1], free  , dat )).join(" ")+"\n" ); }
+    }
+}
+
+function trim(string){
+    
+    for(var i = 0; i< string.length-5; i++){
+        if(string[i]=="exists" &&string[i+3]=="exists" &&string[i+1]== string[i+4]){
+            return string.slice(0,i).concat(string.slice(i+3,string.length));
+        }}
+    return string;
+}
+
+              
+              
+
+           function rec1(strin,a){
+           var out = strin;
+           for(i =1; i < strin.length-1; i++){
+           if(strin[i] == a  && strin[i+1]!= " "){
+           
+           out = strin.slice(0,i+1)+ " " + strin.slice(i+1,);
+           }
+           
+           if(strin[0] == a && strin[1]!= " "){
+           
+           out = "( " + strin.slice(1,);
+           }
+           
+           
+           }
+           return out;}
+           
+           function rec(strin){
+           
+           while(strin != rec1(strin,"(")){ strin = rec1(strin,"(");}
+         
+         while(strin != rec1(strin,")")){ strin = rec1(strin,")");}
+         while(strin != rec1(strin,".")){ strin = rec1(strin,".");}
+          while(strin != rec1(strin,",")){ strin = rec1(strin,",");}           return strin;
+           
+           }
+           
+           function lec1(strin,b){
+           var out = strin;
+           for(i =1; i < strin.length; i++){
+           if(strin[i] == b  && strin[i-1]!= " "){
+           
+           out = strin.slice(0,i)+ " " + strin.slice(i,);
+           }
+           
+           }
+           return out;}
+           
+           function lec(strin){
+           
+           while(strin != lec1(strin,")")){ strin = lec1(strin,")");}
+      while(strin != lec1(strin,"(")){ strin = lec1(strin,"(");}
+      while(strin != lec1(strin,".")){ strin = lec1(strin,".");}
+      while(strin != lec1(strin,",")){ strin = lec1(strin,",");}           return strin;
+           
+           }
+           
+           
+           function norm(strin){
+           
+          
+           
+           strin = space(strin);
+           strin =rec(strin);
+           strin = lec(strin);
+           
+           var st = strin.split(" ");
+           while(st[st.length-1]==""){st.pop()}
+           while(st[0]==""){st.shift()}
+           
+           return st;
+           
+           }
+
+
+function space(string){
+    
+    while(string.replace("  "," ")!= string){string = string.replace("  "," ");}
+    
+    return string;
+}
+              
+              
+    
+    </script>
+</html>
