@@ -1,0 +1,7 @@
+
+formulas(goals).
+%
+% Proposition 4 (viii)
+%
+   d(bang(d(x))) = d(bang(x)).
+end_of_list.

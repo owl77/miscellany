@@ -1,0 +1,18 @@
+
+%
+% Axiomatisation of Troelstra's storage operator
+% IL-algebra + storage = ILS-algebra 
+% (intuitionistic linear algebras with storage)
+%
+
+formulas(assumptions).
+
+%
+% bang(_) is a modality - storage
+%
+bang(x) <= x.
+bang(x) <= y -> bang(x) <= bang(y).
+bang(x) * bang(y) = bang(x /\ y).
+1 = bang(0 ==> 0).
+
+end_of_list.

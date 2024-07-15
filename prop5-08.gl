@@ -1,0 +1,7 @@
+
+formulas(goals).
+%
+% Proposition 5 (viii)
+%
+    bang(bang(x) * bang(y)) = bang(x * y).
+end_of_list.

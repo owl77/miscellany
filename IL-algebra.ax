@@ -1,0 +1,55 @@
+
+%
+% Axiomatisation of Troelstra's ILS-algebras 
+% (intuitionistic linear algebras with storage)
+%
+
+op(500, infix, "==>").
+op(520, infix, "*").
+op(520, infix, "/\").
+op(520, infix, "\/").
+
+formulas(assumptions).
+
+%
+% (X, *, 1) is a commutative monoid with unit 1:
+%
+   (x * y) * z = x * (y * z).
+   x * y = y * x.
+   x * 1 = x.
+%
+% The (X, /\, \/, 0) is a lattice with bottom 0:
+%
+   x /\ y = y /\ x.
+   x \/ y = y \/ x.
+   (x /\ y) /\ z = x /\ (y /\ z).
+   (x \/ y) \/ z = x \/ (y \/ z).
+   x \/ (x /\ y) = x.
+   x /\ (x \/ y) = x.
+   x <= y <-> x = x /\ y.
+   x <= y <-> y = x \/ y.
+   0 <= x.
+
+%
+% _ * _ and _ ==> _ are functors:
+%
+   x <= y & z <= w -> x * z <= y * w.
+   x <= y & z <= w -> y ==> z <= x ==> w.
+%
+% Residuation law:
+%
+   x * y <= z <-> x <= y ==> z.
+%
+% bang(_) is a modality - storage
+%
+bang(x) <= x.
+bang(x) <= y -> bang(x) <= bang(y).
+bang(x) * bang(y) = bang(x /\ y).
+1 = bang(0 ==> 0).
+%
+% Negation and double negation:
+%
+   n(x) = x ==> 0.
+   d(x) = n(n(x)).
+
+end_of_list.

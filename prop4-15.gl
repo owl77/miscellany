@@ -1,0 +1,7 @@
+
+formulas(goals).
+%
+% Proposition 4 (xv)
+%
+   d(bang(d(x))) = bang(d(x)).
+end_of_list.

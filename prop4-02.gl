@@ -1,0 +1,7 @@
+
+formulas(goals).
+%
+% Proposition 4 (ii)
+%
+   d(d(x) /\ d(y)) = d(x /\ y).
+end_of_list.

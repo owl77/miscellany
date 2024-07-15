@@ -1,0 +1,7 @@
+
+formulas(goals).
+%
+% Proposition 5 (iii)
+%
+    bang(bang(x) \/ bang(y)) = bang(x) \/ bang(y).
+end_of_list.

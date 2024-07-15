@@ -1,0 +1,48 @@
+https://www.cs.unm.edu/~mccune/prover9/manual/2009-11A/
+
+To run mace4 and prover9 to obtain counter-examples and proofs run:
+
+Proof of (i)
+----------------------
+$ prover9 -f IL-algebra.ax prop4-01.gl
+
+Counter-model for (ii) -- counter-model of size 4
+----------------------
+$ mace4 -f IL-algebra.ax storage.ax prop4-02.gl
+
+Proof of (iii)
+----------------------
+$ prover9 -f IL-algebra.ax prop4-03.gl
+
+Counter-model for (iv) -- counter-model of size 3
+----------------------
+$ mace4 -f IL-algebra.ax storage.ax prop4-04.gl
+
+Proof of (v)
+----------------------
+$ prover9 -f IL-algebra.ax prop4-05.gl
+
+Counter-model for (viii) -- counter-model of size 3
+----------------------
+$ mace4 -f IL-algebra.ax storage.ax bang.ax prop4-08.gl
+
+Counter-model for (ix) -- counter-model of size 5
+----------------------
+$ mace4 -f IL-algebra.ax storage.ax prop4-09.gl
+
+Proof of (x)
+----------------------
+$ prover9 -f IL-algebra.ax prop4-10.gl
+
+Counter-model for (xi) -- counter-model of size 5
+----------------------
+$ mace4 -f IL-algebra.ax storage.ax prop4-11.gl
+
+Proof of (xii)
+----------------------
+$ prover9 -f IL-algebra.ax prop4-12.gl
+
+Counter-model for (xv) -- counter-model of size 3
+----------------------
+$ mace4 -f IL-algebra.ax storage.ax prop4-15.gl
+

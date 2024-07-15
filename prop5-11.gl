@@ -1,0 +1,7 @@
+
+formulas(goals).
+%
+% Proposition 5 (xi)
+%
+    bang(bang(x) ==> bang(y)) = bang(bang(x) ==> y).
+end_of_list.
